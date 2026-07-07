@@ -54,7 +54,7 @@ function RegisterForm() {
     try {
       const result = await authService.registerViaInvitation({ token, email, password, fullName });
       setSession({ user: result.user, accessToken: result.accessToken });
-      router.push("/");
+      router.push(result.user.role === "admin" ? "/admin" : "/respond");
     } catch {
       setError("No se pudo completar el registro. Verifica tus datos.");
     } finally {
