@@ -1,0 +1,19 @@
+export const typography = {
+  fontFamily:
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  fontSize: {
+    sm: "14px",
+    md: "16px",
+    lg: "20px",
+    xl: "28px",
+  },
+  fontWeight: {
+    regular: 400,
+    medium: 500,
+    bold: 700,
+  },
+  lineHeight: {
+    tight: 1.2,
+    normal: 1.5,
+  },
+} as const;
