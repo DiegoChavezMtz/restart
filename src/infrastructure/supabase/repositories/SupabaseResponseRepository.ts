@@ -45,12 +45,17 @@ export class SupabaseResponseRepository implements ResponseRepository {
   async createResponse(
     formId: string,
     participantId: string,
+    firstQuestionId: string | null,
     accessToken: string
   ): Promise<FormResponse> {
     const client = createServerSupabaseClient(accessToken);
     const { data: row, error } = await client
       .from("form_responses")
-      .insert({ form_id: formId, participant_id: participantId })
+      .insert({
+        form_id: formId,
+        participant_id: participantId,
+        current_question_id: firstQuestionId,
+      })
       .select("*")
       .single();
     if (error || !row) throw new UseCaseError(error?.message ?? "Failed to create response", 500);
@@ -97,13 +102,13 @@ export class SupabaseResponseRepository implements ResponseRepository {
 
   async advanceResponse(
     responseId: string,
-    newOrder: number,
+    nextQuestionId: string | null,
     accessToken: string
   ): Promise<FormResponse> {
     const client = createServerSupabaseClient(accessToken);
     const { data: row, error } = await client
       .from("form_responses")
-      .update({ current_question_order: newOrder, updated_at: new Date().toISOString() })
+      .update({ current_question_id: nextQuestionId, updated_at: new Date().toISOString() })
       .eq("id", responseId)
       .select("*")
       .maybeSingle();

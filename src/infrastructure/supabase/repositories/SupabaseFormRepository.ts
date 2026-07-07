@@ -6,6 +6,7 @@ import type {
   FormSkill,
   FormStatus,
   Question,
+  QuestionOptionBranch,
   QuestionSkillWeight,
 } from "@/domain/entities";
 import type {
@@ -13,6 +14,7 @@ import type {
   CreateFormSkillInput,
   CreateQuestionInput,
   FormRepository,
+  QuestionOptionBranchRuleInput,
   SetQuestionSkillWeightInput,
   UpdateFormDetailsInput,
   UpdateFormSkillInput,
@@ -23,6 +25,7 @@ import { toDomainForm } from "@/infrastructure/supabase/mappers/toDomainForm";
 import { toDomainFormAssignment } from "@/infrastructure/supabase/mappers/toDomainFormAssignment";
 import { toDomainFormSkill } from "@/infrastructure/supabase/mappers/toDomainFormSkill";
 import { toDomainQuestion } from "@/infrastructure/supabase/mappers/toDomainQuestion";
+import { toDomainQuestionOptionBranch } from "@/infrastructure/supabase/mappers/toDomainQuestionOptionBranch";
 import { toDomainQuestionSkillWeight } from "@/infrastructure/supabase/mappers/toDomainQuestionSkillWeight";
 
 export class SupabaseFormRepository implements FormRepository {
@@ -405,5 +408,39 @@ export class SupabaseFormRepository implements FormRepository {
     const newForm = await this.getFormById(newFormId, adminAccessToken);
     if (!newForm) throw new UseCaseError("Duplicated form not found after creation", 500);
     return newForm;
+  }
+
+  async listQuestionOptionBranchesByForm(
+    formId: string,
+    adminAccessToken: string
+  ): Promise<QuestionOptionBranch[]> {
+    const client = createServerSupabaseClient(adminAccessToken);
+    const { data, error } = await client
+      .from("question_option_branches")
+      .select("*, questions!question_id(form_id)")
+      .eq("questions.form_id", formId);
+    if (error) throw new UseCaseError(error.message, 500);
+    return (data ?? []).map(toDomainQuestionOptionBranch);
+  }
+
+  async setQuestionOptionBranches(
+    formId: string,
+    questionId: string,
+    branches: QuestionOptionBranchRuleInput[],
+    adminAccessToken: string
+  ): Promise<QuestionOptionBranch[]> {
+    const client = createServerSupabaseClient(adminAccessToken);
+    const { error } = await client.rpc("set_question_option_branches", {
+      p_question_id: questionId,
+      p_branches: branches.map((b) => ({
+        optionValue: b.optionValue,
+        targetQuestionId: b.targetQuestionId,
+        endsForm: b.endsForm,
+      })),
+    });
+    if (error) throw new UseCaseError(error.message, 500);
+
+    const all = await this.listQuestionOptionBranchesByForm(formId, adminAccessToken);
+    return all.filter((b) => b.questionId === questionId);
   }
 }

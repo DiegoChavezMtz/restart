@@ -136,3 +136,9 @@ export class UserNotFoundError extends UseCaseError {
     super("User not found", 404);
   }
 }
+
+export class InvalidQuestionOptionBranchError extends UseCaseError {
+  constructor(message: string) {
+    super(message, 400);
+  }
+}

@@ -11,6 +11,7 @@ import type {
   FormStatus,
   Invitation,
   Question,
+  QuestionOptionBranch,
   QuestionSkillWeight,
   User,
 } from "../entities";
@@ -111,6 +112,12 @@ export interface SetQuestionSkillWeightInput {
   weight: number;
 }
 
+export interface QuestionOptionBranchRuleInput {
+  optionValue: string;
+  targetQuestionId: string | null;
+  endsForm: boolean;
+}
+
 export interface FormRepository {
   createForm(input: CreateFormInput, adminAccessToken: string): Promise<Form>;
   listForms(adminAccessToken: string): Promise<Form[]>;
@@ -186,13 +193,29 @@ export interface FormRepository {
     input: { createdBy: string },
     adminAccessToken: string
   ): Promise<Form>;
+
+  listQuestionOptionBranchesByForm(
+    formId: string,
+    adminAccessToken: string
+  ): Promise<QuestionOptionBranch[]>;
+  setQuestionOptionBranches(
+    formId: string,
+    questionId: string,
+    branches: QuestionOptionBranchRuleInput[],
+    adminAccessToken: string
+  ): Promise<QuestionOptionBranch[]>;
 }
 
 export interface ResponseRepository {
   listVisibleForms(accessToken: string): Promise<Form[]>;
   listResponsesForParticipant(accessToken: string): Promise<FormResponse[]>;
   getResponse(formId: string, participantId: string, accessToken: string): Promise<FormResponse | null>;
-  createResponse(formId: string, participantId: string, accessToken: string): Promise<FormResponse>;
+  createResponse(
+    formId: string,
+    participantId: string,
+    firstQuestionId: string | null,
+    accessToken: string
+  ): Promise<FormResponse>;
   deleteResponse(responseId: string, accessToken: string): Promise<void>;
   listAnswersByResponse(responseId: string, accessToken: string): Promise<Answer[]>;
   addAnswer(
@@ -202,7 +225,11 @@ export interface ResponseRepository {
     autoSubmittedByTimeout: boolean,
     accessToken: string
   ): Promise<Answer>;
-  advanceResponse(responseId: string, newOrder: number, accessToken: string): Promise<FormResponse>;
+  advanceResponse(
+    responseId: string,
+    nextQuestionId: string | null,
+    accessToken: string
+  ): Promise<FormResponse>;
   completeResponse(responseId: string, accessToken: string): Promise<FormResponse>;
 }
 

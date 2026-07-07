@@ -31,6 +31,7 @@ export interface FormBuilderCanvasProps {
   onEditQuestion: (question: Question) => void;
   onDeleteQuestion: (question: Question) => void;
   locked?: boolean;
+  conflictingQuestionIds?: Set<string>;
 }
 
 export function FormBuilderCanvas({
@@ -39,6 +40,7 @@ export function FormBuilderCanvas({
   onEditQuestion,
   onDeleteQuestion,
   locked,
+  conflictingQuestionIds,
 }: FormBuilderCanvasProps) {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -71,6 +73,7 @@ export function FormBuilderCanvas({
               onEdit={() => onEditQuestion(question)}
               onDelete={() => onDeleteQuestion(question)}
               disabled={locked}
+              hasBranchConflict={conflictingQuestionIds?.has(question.id)}
             />
           ))}
         </List>

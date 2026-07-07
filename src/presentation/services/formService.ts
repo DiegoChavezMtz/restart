@@ -5,6 +5,7 @@ import type {
   FormSkill,
   FormStatus,
   Question,
+  QuestionOptionBranch,
   QuestionSkillWeight,
 } from "@/domain/entities";
 import type { QuestionConfig, QuestionType } from "@/domain/value-objects";
@@ -27,6 +28,7 @@ export interface GetFormResult {
   skills: FormSkill[];
   questionSkillWeights: QuestionSkillWeight[];
   assignments: FormAssignment[];
+  questionOptionBranches: QuestionOptionBranch[];
 }
 
 export async function getForm(formId: string): Promise<GetFormResult> {
@@ -175,5 +177,17 @@ export async function setFormAssignments(
 
 export async function duplicateForm(formId: string): Promise<Form> {
   const { data } = await axiosClient.post<Form>(`/forms/${encodeURIComponent(formId)}/duplicate`);
+  return data;
+}
+
+export async function setQuestionOptionBranches(
+  formId: string,
+  questionId: string,
+  branches: { optionValue: string; targetQuestionId: string | null; endsForm: boolean }[]
+): Promise<QuestionOptionBranch[]> {
+  const { data } = await axiosClient.patch<QuestionOptionBranch[]>(
+    `/forms/${encodeURIComponent(formId)}/questions/${encodeURIComponent(questionId)}/branches`,
+    { branches }
+  );
   return data;
 }

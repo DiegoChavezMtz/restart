@@ -151,14 +151,15 @@ export default function RespondFormPage() {
     );
   }
 
-  const currentQuestion = questions[response.currentQuestionOrder];
+  const currentQuestionIndex = questions.findIndex((q) => q.id === response.currentQuestionId);
+  const currentQuestion = currentQuestionIndex === -1 ? undefined : questions[currentQuestionIndex];
 
   return (
     <Section>
       {currentQuestion && (
         <>
           <Progress>
-            Pregunta {response.currentQuestionOrder + 1} de {questions.length}
+            Pregunta {currentQuestionIndex + 1} de {questions.length}
           </Progress>
           <AnimatePresence mode="wait" initial={false}>
             <QuestionSlide

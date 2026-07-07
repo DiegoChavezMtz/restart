@@ -23,6 +23,7 @@ import type {
   FormSkill,
   FormStatus,
   Question,
+  QuestionOptionBranch,
   QuestionSkillWeight,
   User,
 } from "@/domain/entities";
@@ -82,6 +83,7 @@ export default function FormBuilderPage() {
   const [skills, setSkills] = useState<FormSkill[]>([]);
   const [questionSkillWeights, setQuestionSkillWeights] = useState<QuestionSkillWeight[]>([]);
   const [assignments, setAssignments] = useState<FormAssignment[]>([]);
+  const [branches, setBranches] = useState<QuestionOptionBranch[]>([]);
   const [cohorts, setCohorts] = useState<Cohort[]>([]);
   const [browsedCohortId, setBrowsedCohortId] = useState("");
   const [browsedParticipants, setBrowsedParticipants] = useState<User[]>([]);
@@ -106,6 +108,7 @@ export default function FormBuilderPage() {
         setSkills(result.skills);
         setQuestionSkillWeights(result.questionSkillWeights);
         setAssignments(result.assignments);
+        setBranches(result.questionOptionBranches);
         setTitle(result.form.title);
         setDescription(result.form.description ?? "");
         setLoadState("loaded");
@@ -153,6 +156,25 @@ export default function FormBuilderPage() {
   }
 
   const locked = responseCount > 0;
+
+  // Un salto queda en conflicto si su destino ya no tiene un `order` mayor al
+  // de la pregunta origen (por ejemplo, tras un reordenamiento por drag & drop)
+  // o si la pregunta destino ya no existe.
+  const questionOrderById = new Map(questions.map((q) => [q.id, q.order]));
+  const conflictingQuestionIds = new Set(
+    branches
+      .filter((branch) => {
+        if (branch.endsForm) return false;
+        const sourceOrder = questionOrderById.get(branch.questionId);
+        const targetOrder = branch.targetQuestionId
+          ? questionOrderById.get(branch.targetQuestionId)
+          : undefined;
+        return (
+          sourceOrder === undefined || targetOrder === undefined || targetOrder <= sourceOrder
+        );
+      })
+      .map((branch) => branch.questionId)
+  );
 
   async function handleSaveDetails() {
     if (!form) return;
@@ -213,7 +235,7 @@ export default function FormBuilderPage() {
   }
 
   async function handleSaveQuestion(input: QuestionEditorPanelInput) {
-    const { skillWeight, ...questionInput } = input;
+    const { skillWeight, branches: branchInput, ...questionInput } = input;
     try {
       let questionId: string;
       if (editorState?.mode === "edit") {
@@ -235,6 +257,11 @@ export default function FormBuilderPage() {
           ...prev.filter((w) => w.questionId !== questionId),
           saved,
         ]);
+      }
+
+      if (branchInput !== undefined) {
+        const saved = await formService.setQuestionOptionBranches(formId, questionId, branchInput);
+        setBranches((prev) => [...prev.filter((b) => b.questionId !== questionId), ...saved]);
       }
 
       setEditorState(null);
@@ -370,6 +397,7 @@ export default function FormBuilderPage() {
           onEditQuestion={(question) => setEditorState({ mode: "edit", question })}
           onDeleteQuestion={handleDeleteQuestion}
           locked={locked}
+          conflictingQuestionIds={conflictingQuestionIds}
         />
       </Section>
 
@@ -381,6 +409,12 @@ export default function FormBuilderPage() {
           currentSkillWeight={
             editorState.mode === "edit"
               ? questionSkillWeights.find((w) => w.questionId === editorState.question.id)
+              : undefined
+          }
+          allQuestions={questions}
+          existingBranches={
+            editorState.mode === "edit"
+              ? branches.filter((b) => b.questionId === editorState.question.id)
               : undefined
           }
           onSave={handleSaveQuestion}
@@ -400,6 +434,7 @@ export default function FormBuilderPage() {
         questions={questions}
         skills={skills}
         questionSkillWeights={questionSkillWeights}
+        branches={branches}
       />
     </>
   );

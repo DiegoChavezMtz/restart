@@ -85,8 +85,19 @@ export interface FormResponse {
   formId: string;
   participantId: string;
   status: FormResponseStatus;
-  currentQuestionOrder: number;
+  currentQuestionId: string | null;
   submittedAt: string | null;
+}
+
+// Salto condicional para una opción de una pregunta single_choice. Exactamente
+// uno de targetQuestionId/endsForm está definido (XOR), validado en el caso de
+// uso y también con un CHECK + trigger en Postgres (supabase/sql).
+export interface QuestionOptionBranch {
+  id: string;
+  questionId: string;
+  optionValue: string;
+  targetQuestionId: string | null;
+  endsForm: boolean;
 }
 
 export interface Answer {

@@ -5,7 +5,7 @@ interface FormResponseRow {
   form_id: string;
   participant_id: string;
   status: string;
-  current_question_order: number;
+  current_question_id: string | null;
   submitted_at: string | null;
 }
 
@@ -15,7 +15,7 @@ export function toDomainFormResponse(row: FormResponseRow): FormResponse {
     formId: row.form_id,
     participantId: row.participant_id,
     status: row.status as FormResponseStatus,
-    currentQuestionOrder: row.current_question_order,
+    currentQuestionId: row.current_question_id,
     submittedAt: row.submitted_at,
   };
 }

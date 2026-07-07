@@ -23,18 +23,21 @@ export async function resumeFormResponse(
     response = null;
   }
 
+  const questions = await formRepo.listQuestionsByForm(input.formId, input.accessToken);
+  const firstQuestionId = questions[0]?.id ?? null;
+
   if (!response) {
     if (!form.acceptingResponses) throw new FormNotAcceptingResponsesError();
     response = await responseRepo.createResponse(
       input.formId,
       input.requestedBy.id,
+      firstQuestionId,
       input.accessToken
     );
   }
 
-  const questions = await formRepo.listQuestionsByForm(input.formId, input.accessToken);
   const answers =
-    response.currentQuestionOrder > 0 || response.status === "completed"
+    response.currentQuestionId !== firstQuestionId || response.status === "completed"
       ? await responseRepo.listAnswersByResponse(response.id, input.accessToken)
       : [];
 

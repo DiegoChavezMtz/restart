@@ -47,6 +47,7 @@ export interface DraggableQuestionRowProps {
   onEdit: () => void;
   onDelete: () => void;
   disabled?: boolean;
+  hasBranchConflict?: boolean;
 }
 
 export function DraggableQuestionRow({
@@ -54,6 +55,7 @@ export function DraggableQuestionRow({
   onEdit,
   onDelete,
   disabled,
+  hasBranchConflict,
 }: DraggableQuestionRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: question.id,
@@ -72,6 +74,9 @@ export function DraggableQuestionRow({
       </DragHandle>
       <QuestionLabel>{question.label}</QuestionLabel>
       <Badge>{QUESTION_TYPE_REGISTRY[question.type].label}</Badge>
+      {hasBranchConflict && (
+        <Badge tone="warning">Conflicto de salto</Badge>
+      )}
       {!disabled && (
         <Actions>
           <Button type="button" variant="secondary" onClick={onEdit}>

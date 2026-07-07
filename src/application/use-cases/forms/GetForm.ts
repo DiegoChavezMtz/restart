@@ -4,6 +4,7 @@ import type {
   FormAssignment,
   FormSkill,
   Question,
+  QuestionOptionBranch,
   QuestionSkillWeight,
   User,
 } from "@/domain/entities";
@@ -19,19 +20,30 @@ export async function getForm(
   skills: FormSkill[];
   questionSkillWeights: QuestionSkillWeight[];
   assignments: FormAssignment[];
+  questionOptionBranches: QuestionOptionBranch[];
 }> {
   if (input.requestedBy.role !== "admin") throw new ForbiddenError();
 
   const form = await repo.getFormById(input.formId, input.adminAccessToken);
   if (!form) throw new FormNotFoundError();
 
-  const [questions, responseCount, skills, questionSkillWeights, assignments] = await Promise.all([
-    repo.listQuestionsByForm(input.formId, input.adminAccessToken),
-    repo.countResponsesByForm(input.formId, input.adminAccessToken),
-    repo.listFormSkills(input.formId, input.adminAccessToken),
-    repo.listQuestionSkillWeightsByForm(input.formId, input.adminAccessToken),
-    repo.listFormAssignments(input.formId, input.adminAccessToken),
-  ]);
+  const [questions, responseCount, skills, questionSkillWeights, assignments, questionOptionBranches] =
+    await Promise.all([
+      repo.listQuestionsByForm(input.formId, input.adminAccessToken),
+      repo.countResponsesByForm(input.formId, input.adminAccessToken),
+      repo.listFormSkills(input.formId, input.adminAccessToken),
+      repo.listQuestionSkillWeightsByForm(input.formId, input.adminAccessToken),
+      repo.listFormAssignments(input.formId, input.adminAccessToken),
+      repo.listQuestionOptionBranchesByForm(input.formId, input.adminAccessToken),
+    ]);
 
-  return { form, questions, responseCount, skills, questionSkillWeights, assignments };
+  return {
+    form,
+    questions,
+    responseCount,
+    skills,
+    questionSkillWeights,
+    assignments,
+    questionOptionBranches,
+  };
 }
