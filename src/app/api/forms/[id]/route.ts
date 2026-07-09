@@ -32,7 +32,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
     const { id } = await params;
     const authRepo = new SupabaseAuthRepository();
     const { user, accessToken } = await requireUser(request, authRepo);
-    const { title, description, allowsPartialSave } = await request.json();
+    const { title, description, allowsPartialSave, instructionsPopup } = await request.json();
 
     const formRepo = new SupabaseFormRepository();
     const form = await updateFormDetails(formRepo, {
@@ -40,6 +40,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
       title,
       description,
       allowsPartialSave,
+      instructionsPopup,
       requestedBy: user,
       adminAccessToken: accessToken,
     });

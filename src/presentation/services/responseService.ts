@@ -16,6 +16,7 @@ export interface ResumeFormResponseResult {
   response: FormResponse;
   questions: Question[];
   answers: Answer[];
+  form: Form;
 }
 
 export async function resumeFormResponse(formId: string): Promise<ResumeFormResponseResult> {

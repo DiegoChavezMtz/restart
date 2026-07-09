@@ -24,6 +24,7 @@ export async function updateFormDetails(
       title: input.title?.trim(),
       description: input.description,
       allowsPartialSave: input.allowsPartialSave,
+      instructionsPopup: input.instructionsPopup,
     },
     input.adminAccessToken
   );

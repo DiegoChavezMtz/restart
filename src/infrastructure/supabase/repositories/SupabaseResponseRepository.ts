@@ -58,6 +58,14 @@ export class SupabaseResponseRepository implements ResponseRepository {
       })
       .select("*")
       .single();
+
+    if (error?.code === "23505") {
+      // unique (form_id, participant_id): a concurrent request (e.g. React
+      // Strict Mode's double-invoked mount effect) already created this
+      // response — read it back instead of failing the whole page load.
+      const existing = await this.getResponse(formId, participantId, accessToken);
+      if (existing) return existing;
+    }
     if (error || !row) throw new UseCaseError(error?.message ?? "Failed to create response", 500);
     return toDomainFormResponse(row);
   }

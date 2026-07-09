@@ -57,6 +57,29 @@ const SwitchRow = styled.label`
   color: ${(props) => props.theme.colors.textPrimary};
 `;
 
+const TextArea = styled.textarea`
+  width: 100%;
+  min-height: 96px;
+  padding: ${(props) => props.theme.spacing.sm};
+  border-radius: 8px;
+  border: 1px solid ${(props) => props.theme.colors.border};
+  background: ${(props) => props.theme.colors.background};
+  color: ${(props) => props.theme.colors.textPrimary};
+  font-family: inherit;
+  font-size: ${(props) => props.theme.typography.fontSize.md};
+  resize: vertical;
+
+  &:focus {
+    outline: 2px solid ${(props) => props.theme.colors.primary};
+    outline-offset: 1px;
+  }
+`;
+
+const HelperText = styled.p`
+  font-size: ${(props) => props.theme.typography.fontSize.sm};
+  color: ${(props) => props.theme.colors.textSecondary};
+`;
+
 const STATUS_TONE: Record<FormStatus, "neutral" | "success" | "warning"> = {
   draft: "neutral",
   published: "success",
@@ -93,6 +116,7 @@ export default function FormBuilderPage() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [instructionsPopup, setInstructionsPopup] = useState("");
 
   const [editorState, setEditorState] = useState<
     { mode: "create" } | { mode: "edit"; question: Question } | null
@@ -111,6 +135,7 @@ export default function FormBuilderPage() {
         setBranches(result.questionOptionBranches);
         setTitle(result.form.title);
         setDescription(result.form.description ?? "");
+        setInstructionsPopup(result.form.instructionsPopup ?? "");
         setLoadState("loaded");
       })
       .catch((err) => {
@@ -182,6 +207,7 @@ export default function FormBuilderPage() {
       const updated = await formService.updateFormDetails(formId, {
         title,
         description: description || null,
+        instructionsPopup: instructionsPopup.trim() || null,
       });
       setForm(updated);
     } catch {
@@ -327,6 +353,13 @@ export default function FormBuilderPage() {
         </FormField>
         <FormField label="Descripción">
           <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+        </FormField>
+        <FormField label="Instrucciones (popup opcional)">
+          <TextArea
+            value={instructionsPopup}
+            onChange={(e) => setInstructionsPopup(e.target.value)}
+          />
+          <HelperText>Déjalo vacío si no quieres mostrar un popup de instrucciones.</HelperText>
         </FormField>
         <Button onClick={handleSaveDetails}>Guardar detalles</Button>
 

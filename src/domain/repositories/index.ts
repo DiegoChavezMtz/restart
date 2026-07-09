@@ -73,6 +73,7 @@ export interface UpdateFormDetailsInput {
   title?: string;
   description?: string | null;
   allowsPartialSave?: boolean;
+  instructionsPopup?: string | null;
 }
 
 export interface CreateQuestionInput {

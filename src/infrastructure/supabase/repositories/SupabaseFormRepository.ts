@@ -80,6 +80,9 @@ export class SupabaseFormRepository implements FormRepository {
         ...(input.allowsPartialSave !== undefined && {
           allows_partial_save: input.allowsPartialSave,
         }),
+        ...(input.instructionsPopup !== undefined && {
+          instructions_popup: input.instructionsPopup,
+        }),
         updated_at: new Date().toISOString(),
       })
       .eq("id", formId)

@@ -7,10 +7,11 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import styled from "styled-components";
 import { Button } from "@/presentation/atoms/Button";
 import { CountdownTimer } from "@/presentation/molecules/CountdownTimer";
+import { FormInstructionsModal } from "@/presentation/molecules/FormInstructionsModal";
 import { FormStatusMessage } from "@/presentation/molecules/FormStatusMessage";
 import { QuestionAnswerRenderer } from "@/presentation/molecules/QuestionAnswerRenderer";
 import * as soundService from "@/presentation/services/soundService";
-import type { FormResponse, Question } from "@/domain/entities";
+import type { Form, FormResponse, Question } from "@/domain/entities";
 import type { AnswerValue } from "@/domain/value-objects";
 import * as responseService from "@/presentation/services/responseService";
 
@@ -28,6 +29,10 @@ const Section = styled.section`
 const Title = styled.h2`
   font-size: ${(props) => props.theme.typography.fontSize.lg};
   color: ${(props) => props.theme.colors.textPrimary};
+`;
+
+const Description = styled.p`
+  color: ${(props) => props.theme.colors.textSecondary};
 `;
 
 const Progress = styled.span`
@@ -73,9 +78,12 @@ export default function RespondFormPage() {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [response, setResponse] = useState<FormResponse | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [form, setForm] = useState<Form | null>(null);
   const [currentValue, setCurrentValue] = useState<AnswerValue | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [instructionsModalOpen, setInstructionsModalOpen] = useState(false);
 
   useEffect(() => {
     responseService
@@ -83,6 +91,13 @@ export default function RespondFormPage() {
       .then((result) => {
         setResponse(result.response);
         setQuestions(result.questions);
+        setForm(result.form);
+        const firstQuestionId = result.questions[0]?.id ?? null;
+        const isFreshStart =
+          result.answers.length === 0 && result.response.currentQuestionId === firstQuestionId;
+        const shouldShowInstructions = isFreshStart && !!result.form.instructionsPopup?.trim();
+        setHasStarted(!shouldShowInstructions);
+        setInstructionsModalOpen(shouldShowInstructions);
         setLoadState("loaded");
       })
       .catch(() => setLoadState("error"));
@@ -128,8 +143,28 @@ export default function RespondFormPage() {
 
   if (loadState === "loading") return null;
 
-  if (loadState === "error" || !response) {
+  if (loadState === "error" || !response || !form) {
     return <FormStatusMessage variant="error">No se pudo cargar este formulario.</FormStatusMessage>;
+  }
+
+  if (!hasStarted) {
+    return (
+      <Section>
+        <Title>{form.title}</Title>
+        {form.description && <Description>{form.description}</Description>}
+        <SubmitButton onClick={() => setInstructionsModalOpen(true)}>Comenzar</SubmitButton>
+        <FormInstructionsModal
+          open={instructionsModalOpen}
+          onClose={() => setInstructionsModalOpen(false)}
+          title={form.title}
+          instructions={form.instructionsPopup ?? ""}
+          onStart={() => {
+            setInstructionsModalOpen(false);
+            setHasStarted(true);
+          }}
+        />
+      </Section>
+    );
   }
 
   if (response.status === "completed") {

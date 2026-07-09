@@ -36,6 +36,7 @@ export interface Form {
   status: FormStatus;
   acceptingResponses: boolean;
   allowsPartialSave: boolean;
+  instructionsPopup: string | null;
   deadlineAt: string | null; // reservado, sin lógica activa aún
   createdBy: string;
   createdAt: string;
