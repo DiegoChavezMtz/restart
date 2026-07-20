@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "incremental": false,
+    "plugins": []
+  },
+  "include": [
+    "next-env.d.ts",
+    "src/application/errors.ts",
+    "src/application/use-cases/auth/**/*.ts",
+    "src/domain/**/*.ts",
+    "src/infrastructure/supabase/auth/**/*.ts",
+    "src/infrastructure/supabase/client.ts",
+    "src/infrastructure/supabase/mappers/toDomainInvitation.ts",
+    "src/infrastructure/supabase/mappers/toDomainUser.ts",
+    "src/app/api/_lib/**/*.ts",
+    "src/app/api/auth/**/*.ts",
+    "src/presentation/services/auth*.ts",
+    "src/presentation/services/axiosClient.ts",
+    "src/presentation/state/**/*.tsx",
+    "src/app/login/page.tsx",
+    "src/app/register/page.tsx",
+    "src/app/forgot-password/page.tsx",
+    "src/app/reset-password/page.tsx",
+    "tests/auth/**/*.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
+}

@@ -7,6 +7,17 @@ export interface LoginResult {
   user: User;
 }
 
+export interface ApiErrorPayload {
+  error?: string;
+  code?: string;
+}
+
+export function getAuthErrorCode(error: unknown): string | null {
+  if (typeof error !== "object" || error === null || !("response" in error)) return null;
+  const response = (error as { response?: { data?: ApiErrorPayload } }).response;
+  return response?.data?.code ?? null;
+}
+
 export async function login(email: string, password: string): Promise<LoginResult> {
   const { data } = await axiosClient.post<LoginResult>("/auth/login", { email, password });
   return data;

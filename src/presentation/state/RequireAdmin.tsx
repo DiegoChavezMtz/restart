@@ -11,11 +11,11 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (status === "loading") return;
     if (status === "unauthenticated") {
-      router.push("/login");
+      router.replace("/login?next=%2Fadmin");
       return;
     }
     if (user?.role !== "admin") {
-      router.push("/");
+      router.replace("/respond");
     }
   }, [status, user, router]);
 

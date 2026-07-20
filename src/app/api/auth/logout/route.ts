@@ -16,6 +16,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     clearRefreshCookie(response);
     return response;
   } catch (error) {
-    return handleRouteError(error);
+    const response = handleRouteError(error);
+    clearRefreshCookie(response);
+    return response;
   }
 }

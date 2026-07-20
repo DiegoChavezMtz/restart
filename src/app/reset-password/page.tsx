@@ -8,6 +8,7 @@ import { FormStatusMessage } from "@/presentation/molecules/FormStatusMessage";
 import { AuthCard, AuthCardBody, AuthCardTitle } from "@/presentation/molecules/AuthCard";
 import { useAuth } from "@/presentation/state/AuthContext";
 import * as authService from "@/presentation/services/authService";
+import { getRoleHome } from "@/presentation/services/authNavigation";
 
 export default function ResetPasswordPage() {
   return (
@@ -23,19 +24,29 @@ function ResetPasswordForm() {
   const { setSession } = useAuth();
   const tokenHash = searchParams.get("token_hash") ?? "";
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    if (newPassword !== confirmPassword) {
+      setError("Las contraseñas no coinciden.");
+      return;
+    }
     setIsSubmitting(true);
     try {
       const result = await authService.resetPassword(tokenHash, newPassword);
-      setSession({ user: result.user, accessToken: result.accessToken });
-      router.push("/");
-    } catch {
-      setError("El link es inválido o expiró. Solicita uno nuevo.");
+      setSession(result);
+      router.replace(getRoleHome(result.user.role));
+    } catch (requestError) {
+      const code = authService.getAuthErrorCode(requestError);
+      setError(
+        code === "INVALID_AUTH_INPUT"
+          ? "La contraseña debe tener al menos 8 caracteres."
+          : "El link es inválido o expiró. Solicita uno nuevo."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -60,9 +71,20 @@ function ResetPasswordForm() {
         <AuthCardTitle>Nueva contraseña</AuthCardTitle>
         <Input
           type="password"
+          name="password"
+          autoComplete="new-password"
           placeholder="Nueva contraseña"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
+          required
+        />
+        <Input
+          type="password"
+          name="confirmPassword"
+          autoComplete="new-password"
+          placeholder="Confirmar contraseña"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
           required
         />
         {error && <FormStatusMessage variant="error">{error}</FormStatusMessage>}

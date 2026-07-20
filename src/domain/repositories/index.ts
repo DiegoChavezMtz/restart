@@ -2,6 +2,9 @@
 
 import type {
   Answer,
+  AttendanceRecord,
+  AttendanceSession,
+  AttendanceStatus,
   Cohort,
   Form,
   FormAssignment,
@@ -38,9 +41,7 @@ export interface AuthRepository {
   requestPasswordReset(email: string, redirectTo: string): Promise<void>;
   resetPassword(tokenHash: string, newPassword: string): Promise<AuthSession>;
   refreshSession(refreshToken: string): Promise<AuthSession>;
-  registerViaInvitation(
-    input: RegisterViaInvitationInput & { cohortId: string }
-  ): Promise<AuthSession>;
+  registerViaInvitation(input: RegisterViaInvitationInput): Promise<AuthSession>;
   getInvitationByToken(token: string): Promise<Invitation | null>;
   generateInvitation(
     cohortId: string,
@@ -242,4 +243,50 @@ export interface StatsRepository {
     adminAccessToken: string
   ): Promise<FormResponse[]>;
   getUserById(userId: string, adminAccessToken: string): Promise<User | null>;
+}
+
+export interface JustifyAttendanceInput {
+  sessionId: string;
+  participantId: string;
+  description: string;
+  // null => no se está reemplazando el archivo existente (si lo hay).
+  file: File | null;
+}
+
+export interface AttendanceRepository {
+  listSessionsByCohort(cohortId: string, adminAccessToken: string): Promise<AttendanceSession[]>;
+  // Crea (idempotente) las sesiones de los últimos N días hábiles que aún no existan.
+  ensureSession(
+    cohortId: string,
+    sessionDate: string,
+    createdBy: string,
+    adminAccessToken: string
+  ): Promise<void>;
+
+  listRecordsByCohort(cohortId: string, adminAccessToken: string): Promise<AttendanceRecord[]>;
+  getRecord(
+    sessionId: string,
+    participantId: string,
+    adminAccessToken: string
+  ): Promise<AttendanceRecord | null>;
+  setStatus(
+    sessionId: string,
+    participantId: string,
+    status: Exclude<AttendanceStatus, "justificado">,
+    recordedBy: string,
+    adminAccessToken: string
+  ): Promise<AttendanceRecord>;
+  clearStatus(sessionId: string, participantId: string, adminAccessToken: string): Promise<void>;
+
+  justify(input: JustifyAttendanceInput, adminAccessToken: string): Promise<AttendanceRecord>;
+  removeJustification(
+    sessionId: string,
+    participantId: string,
+    adminAccessToken: string
+  ): Promise<AttendanceRecord>;
+  getJustificationFileUrl(
+    sessionId: string,
+    participantId: string,
+    adminAccessToken: string
+  ): Promise<{ url: string; fileType: string } | null>;
 }

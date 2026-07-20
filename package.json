@@ -2,11 +2,15 @@
   "name": "restart",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "npm run test:auth",
+    "test:auth": "node --test --experimental-transform-types --experimental-loader ./tests/auth/aliasLoader.mjs tests/auth/*.test.ts",
+    "typecheck:auth": "tsc --project tsconfig.auth.json --pretty false"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

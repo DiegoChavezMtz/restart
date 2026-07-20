@@ -3,7 +3,7 @@
 import styled, { css } from "styled-components";
 
 export interface BadgeProps {
-  tone?: "success" | "error" | "neutral" | "warning";
+  tone?: "success" | "error" | "neutral" | "warning" | "info";
 }
 
 export const Badge = styled.span<BadgeProps>`
@@ -30,6 +30,11 @@ export const Badge = styled.span<BadgeProps>`
     props.tone === "warning" &&
     css`
       color: ${props.theme.colors.warning};
+    `}
+  ${(props) =>
+    props.tone === "info" &&
+    css`
+      color: ${props.theme.colors.accentPurple};
     `}
   ${(props) =>
     (!props.tone || props.tone === "neutral") &&

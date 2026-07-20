@@ -21,23 +21,73 @@ interface QuestionTypeDefinition<T extends QuestionType> {
   ConfigEditor: ComponentType<ConfigEditorProps<T>>;
 }
 
+function resizeLikertLabels(labels: string[], length: number): string[] {
+  return Array.from({ length }, (_, i) => labels[i] ?? "");
+}
+
 function LikertConfigEditor({ config, onChange }: ConfigEditorProps<"likert">) {
+  const pointCount = config.scaleMax - config.scaleMin + 1;
+  const hasLabels = Boolean(config.labels && config.labels.length > 0);
+
+  function updateScaleMin(scaleMin: number) {
+    const labels = hasLabels
+      ? resizeLikertLabels(config.labels!, config.scaleMax - scaleMin + 1)
+      : config.labels;
+    onChange({ ...config, scaleMin, labels });
+  }
+
+  function updateScaleMax(scaleMax: number) {
+    const labels = hasLabels
+      ? resizeLikertLabels(config.labels!, scaleMax - config.scaleMin + 1)
+      : config.labels;
+    onChange({ ...config, scaleMax, labels });
+  }
+
+  function toggleHasLabels(checked: boolean) {
+    if (checked) {
+      onChange({ ...config, labels: resizeLikertLabels(config.labels ?? [], pointCount) });
+    } else {
+      onChange({ ...config, labels: undefined });
+    }
+  }
+
+  function updateLabel(index: number, value: string) {
+    const labels = resizeLikertLabels(config.labels ?? [], pointCount);
+    labels[index] = value;
+    onChange({ ...config, labels });
+  }
+
   return (
     <>
       <FormField label="Valor mínimo de la escala">
         <Input
           type="number"
           value={config.scaleMin}
-          onChange={(e) => onChange({ ...config, scaleMin: Number(e.target.value) })}
+          onChange={(e) => updateScaleMin(Number(e.target.value))}
         />
       </FormField>
       <FormField label="Valor máximo de la escala">
         <Input
           type="number"
           value={config.scaleMax}
-          onChange={(e) => onChange({ ...config, scaleMax: Number(e.target.value) })}
+          onChange={(e) => updateScaleMax(Number(e.target.value))}
         />
       </FormField>
+      <FormField label="¿Agregar una etiqueta a cada punto?">
+        <Checkbox
+          checked={hasLabels}
+          onChange={(e) => toggleHasLabels(e.target.checked)}
+        />
+      </FormField>
+      {hasLabels &&
+        Array.from({ length: pointCount }, (_, i) => config.scaleMin + i).map((point, i) => (
+          <FormField key={point} label={`Etiqueta para el valor ${point}`}>
+            <Input
+              value={config.labels?.[i] ?? ""}
+              onChange={(e) => updateLabel(i, e.target.value)}
+            />
+          </FormField>
+        ))}
     </>
   );
 }

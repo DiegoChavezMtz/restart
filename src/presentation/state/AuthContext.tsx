@@ -12,15 +12,20 @@ import {
 import { useRouter } from "next/navigation";
 import type { User } from "@/domain/entities";
 import * as authService from "@/presentation/services/authService";
-import { setAccessToken, setAuthFailureHandler } from "@/presentation/services/axiosClient";
+import {
+  configureAuthHandlers,
+  setAccessToken,
+  type ClientAuthSession,
+} from "@/presentation/services/axiosClient";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
 interface AuthContextValue {
   user: User | null;
   accessToken: string | null;
+  expiresAt: number | null;
   status: AuthStatus;
-  setSession: (session: { user: User; accessToken: string }) => void;
+  setSession: (session: ClientAuthSession) => void;
   logout: () => Promise<void>;
 }
 
@@ -30,18 +35,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
   const bootstrapped = useRef(false);
 
-  const setSession = useCallback((session: { user: User; accessToken: string }) => {
+  const setSession = useCallback((session: ClientAuthSession) => {
+    // Keep the HTTP client in sync before React renders or a navigation starts.
+    setAccessToken(session.accessToken);
     setUser(session.user);
     setAccessTokenState(session.accessToken);
+    setExpiresAt(session.expiresAt);
     setStatus("authenticated");
   }, []);
 
   const clearSession = useCallback(() => {
+    setAccessToken(null);
     setUser(null);
     setAccessTokenState(null);
+    setExpiresAt(null);
     setStatus("unauthenticated");
   }, []);
 
@@ -54,16 +65,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [clearSession]);
 
   useEffect(() => {
-    setAccessToken(accessToken);
-  }, [accessToken]);
-
-  useEffect(() => {
-    setAuthFailureHandler(() => {
-      clearSession();
-      router.push("/login");
+    configureAuthHandlers({
+      onFailure: () => {
+        clearSession();
+        const nextPath = `${window.location.pathname}${window.location.search}`;
+        router.replace(`/login?next=${encodeURIComponent(nextPath)}`);
+      },
+      onRefreshed: setSession,
     });
-    return () => setAuthFailureHandler(null);
-  }, [clearSession, router]);
+    return () => configureAuthHandlers({ onFailure: null, onRefreshed: null });
+  }, [clearSession, router, setSession]);
 
   useEffect(() => {
     if (bootstrapped.current) return;
@@ -71,12 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Silently resume a session from the httpOnly refresh cookie on load.
     authService
       .refresh()
-      .then((result) => setSession({ user: result.user, accessToken: result.accessToken }))
+      .then(setSession)
       .catch(() => clearSession());
   }, [clearSession, setSession]);
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, status, setSession, logout }}>
+    <AuthContext.Provider value={{ user, accessToken, expiresAt, status, setSession, logout }}>
       {children}
     </AuthContext.Provider>
   );

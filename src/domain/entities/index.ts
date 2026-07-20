@@ -108,3 +108,30 @@ export interface Answer {
   value: AnswerValue | null; // null only when autoSubmittedByTimeout and nothing was selected
   autoSubmittedByTimeout: boolean;
 }
+
+export type AttendanceStatus = "asistio" | "retardo" | "falta" | "justificado";
+
+export interface AttendanceSession {
+  id: string;
+  cohortId: string;
+  sessionDate: string; // "YYYY-MM-DD"
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface AttendanceJustification {
+  description: string;
+  filePath: string | null;
+  fileType: string | null;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  sessionId: string;
+  participantId: string;
+  status: AttendanceStatus;
+  recordedBy: string;
+  recordedAt: string;
+  // Solo presente cuando status === "justificado".
+  justification: AttendanceJustification | null;
+}

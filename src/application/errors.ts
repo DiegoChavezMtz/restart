@@ -1,5 +1,9 @@
 export class UseCaseError extends Error {
-  constructor(message: string, public readonly statusCode: number) {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+    public readonly code = "USE_CASE_ERROR"
+  ) {
     super(message);
     this.name = new.target.name;
   }
@@ -7,37 +11,49 @@ export class UseCaseError extends Error {
 
 export class InvalidCredentialsError extends UseCaseError {
   constructor() {
-    super("Invalid email or password", 401);
+    super("Invalid email or password", 401, "INVALID_CREDENTIALS");
   }
 }
 
 export class EmailNotConfirmedError extends UseCaseError {
   constructor() {
-    super("Email not confirmed", 403);
+    super("Email not confirmed", 403, "EMAIL_NOT_CONFIRMED");
   }
 }
 
 export class UnauthenticatedError extends UseCaseError {
   constructor() {
-    super("Not authenticated", 401);
+    super("Not authenticated", 401, "UNAUTHENTICATED");
   }
 }
 
 export class ForbiddenError extends UseCaseError {
   constructor() {
-    super("Forbidden", 403);
+    super("Forbidden", 403, "FORBIDDEN");
   }
 }
 
 export class InvitationNotFoundError extends UseCaseError {
   constructor() {
-    super("Invitation not found or inactive", 404);
+    super("Invitation not found or inactive", 404, "INVITATION_NOT_FOUND");
   }
 }
 
 export class InvalidTokenError extends UseCaseError {
   constructor(message = "Invalid or expired token") {
-    super(message, 400);
+    super(message, 400, "INVALID_TOKEN");
+  }
+}
+
+export class InvalidAuthInputError extends UseCaseError {
+  constructor(message: string) {
+    super(message, 400, "INVALID_AUTH_INPUT");
+  }
+}
+
+export class EmailAlreadyRegisteredError extends UseCaseError {
+  constructor() {
+    super("Email already registered", 409, "EMAIL_ALREADY_REGISTERED");
   }
 }
 
@@ -140,5 +156,17 @@ export class UserNotFoundError extends UseCaseError {
 export class InvalidQuestionOptionBranchError extends UseCaseError {
   constructor(message: string) {
     super(message, 400);
+  }
+}
+
+export class InvalidAttendanceInputError extends UseCaseError {
+  constructor(message: string) {
+    super(message, 400);
+  }
+}
+
+export class AttendanceRecordNotFoundError extends UseCaseError {
+  constructor() {
+    super("Attendance record not found", 404);
   }
 }

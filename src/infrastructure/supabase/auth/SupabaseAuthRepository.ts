@@ -1,8 +1,11 @@
-import type { AuthError } from "@supabase/supabase-js";
+import type { AuthError, SupabaseClient } from "@supabase/supabase-js";
 import {
+  EmailAlreadyRegisteredError,
   EmailNotConfirmedError,
+  InvalidAuthInputError,
   InvalidCredentialsError,
   InvalidTokenError,
+  UnauthenticatedError,
   UseCaseError,
 } from "@/application/errors";
 import type { Invitation, User } from "@/domain/entities";
@@ -15,14 +18,28 @@ import { createServerSupabaseClient } from "@/infrastructure/supabase/client";
 import { toDomainInvitation } from "@/infrastructure/supabase/mappers/toDomainInvitation";
 import { toDomainUser } from "@/infrastructure/supabase/mappers/toDomainUser";
 
-function mapAuthError(error: AuthError): UseCaseError {
-  if (error.message === "Invalid login credentials") {
+function mapAuthError(error: AuthError | null, fallbackMessage: string): UseCaseError {
+  if (error?.code === "invalid_credentials" || error?.message === "Invalid login credentials") {
     return new InvalidCredentialsError();
   }
-  if (error.message === "Email not confirmed") {
+  if (error?.code === "email_not_confirmed" || error?.message === "Email not confirmed") {
     return new EmailNotConfirmedError();
   }
-  return new UseCaseError(error.message, 500);
+  if (error?.code === "user_already_exists" || error?.message.toLowerCase().includes("already registered")) {
+    return new EmailAlreadyRegisteredError();
+  }
+  if (error?.code === "weak_password") {
+    return new InvalidAuthInputError("La contraseña no cumple con los requisitos de seguridad.");
+  }
+  return new UseCaseError(fallbackMessage, 502, "AUTH_PROVIDER_ERROR");
+}
+
+async function getUserProfile(client: SupabaseClient, userId: string): Promise<User> {
+  const { data: row, error } = await client.from("users").select("*").eq("id", userId).single();
+  if (error || !row) {
+    throw new UseCaseError("User profile not found", 500, "USER_PROFILE_NOT_FOUND");
+  }
+  return toDomainUser(row);
 }
 
 export class SupabaseAuthRepository implements AuthRepository {
@@ -32,17 +49,10 @@ export class SupabaseAuthRepository implements AuthRepository {
       email,
       password,
     });
-    if (error || !data.session) throw mapAuthError(error!);
-
-    const { data: row, error: profileError } = await client
-      .from("users")
-      .select("*")
-      .eq("id", data.session.user.id)
-      .single();
-    if (profileError || !row) throw new UseCaseError("User profile not found", 500);
+    if (error || !data.session) throw mapAuthError(error, "Authentication service unavailable");
 
     return {
-      user: toDomainUser(row),
+      user: await getUserProfile(client, data.session.user.id),
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
       expiresAt: data.session.expires_at ?? 0,
@@ -76,8 +86,17 @@ export class SupabaseAuthRepository implements AuthRepository {
 
   async requestPasswordReset(email: string, redirectTo: string): Promise<void> {
     const client = createServerSupabaseClient();
-    // Errors are intentionally swallowed — never leak whether the email exists.
-    await client.auth.resetPasswordForEmail(email, { redirectTo });
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
+    // Supabase does not reveal whether the email exists. Propagating a generic
+    // provider failure lets the UI distinguish an outage from a successful,
+    // privacy-preserving request.
+    if (error) {
+      throw new UseCaseError(
+        "Password reset service unavailable",
+        502,
+        "AUTH_PROVIDER_ERROR"
+      );
+    }
   }
 
   async resetPassword(tokenHash: string, newPassword: string): Promise<AuthSession> {
@@ -91,17 +110,10 @@ export class SupabaseAuthRepository implements AuthRepository {
     const { error: updateError } = await client.auth.updateUser({
       password: newPassword,
     });
-    if (updateError) throw new UseCaseError(updateError.message, 500);
-
-    const { data: row, error: profileError } = await client
-      .from("users")
-      .select("*")
-      .eq("id", data.session.user.id)
-      .single();
-    if (profileError || !row) throw new UseCaseError("User profile not found", 500);
+    if (updateError) throw mapAuthError(updateError, "Password could not be updated");
 
     return {
-      user: toDomainUser(row),
+      user: await getUserProfile(client, data.session.user.id),
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
       expiresAt: data.session.expires_at ?? 0,
@@ -113,26 +125,17 @@ export class SupabaseAuthRepository implements AuthRepository {
     const { data, error } = await client.auth.refreshSession({
       refresh_token: refreshToken,
     });
-    if (error || !data.session) throw mapAuthError(error!);
-
-    const { data: row, error: profileError } = await client
-      .from("users")
-      .select("*")
-      .eq("id", data.session.user.id)
-      .single();
-    if (profileError || !row) throw new UseCaseError("User profile not found", 500);
+    if (error || !data.session) throw new UnauthenticatedError();
 
     return {
-      user: toDomainUser(row),
+      user: await getUserProfile(client, data.session.user.id),
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
       expiresAt: data.session.expires_at ?? 0,
     };
   }
 
-  async registerViaInvitation(
-    input: RegisterViaInvitationInput & { cohortId: string }
-  ): Promise<AuthSession> {
+  async registerViaInvitation(input: RegisterViaInvitationInput): Promise<AuthSession> {
     const client = createServerSupabaseClient();
     const { data, error } = await client.auth.signUp({
       email: input.email,
@@ -140,12 +143,11 @@ export class SupabaseAuthRepository implements AuthRepository {
       options: {
         data: {
           full_name: input.fullName,
-          cohort_id: input.cohortId,
-          role: "participant",
+          invitation_token: input.token,
         },
       },
     });
-    if (error) throw mapAuthError(error);
+    if (error) throw mapAuthError(error, "Registration service unavailable");
 
     if (!data.session) {
       // Invitation-based registration must sign the participant in immediately.
@@ -157,15 +159,8 @@ export class SupabaseAuthRepository implements AuthRepository {
       );
     }
 
-    const { data: row, error: profileError } = await client
-      .from("users")
-      .select("*")
-      .eq("id", data.session.user.id)
-      .single();
-    if (profileError || !row) throw new UseCaseError("User profile not found", 500);
-
     return {
-      user: toDomainUser(row),
+      user: await getUserProfile(client, data.session.user.id),
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
       expiresAt: data.session.expires_at ?? 0,

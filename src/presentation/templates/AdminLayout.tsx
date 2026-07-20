@@ -59,6 +59,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           <Nav>
             <NavLink href="/admin">Cohortes</NavLink>
             <NavLink href="/admin/forms">Formularios</NavLink>
+            <NavLink href="/admin/attendance">Asistencia</NavLink>
             <NavLink href="/admin/stats">Estadísticas</NavLink>
           </Nav>
         </HeaderLeft>

@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Restart
 
-## Getting Started
+Sistema interno de Dekids para crear y asignar formularios de evaluación, responderlos por cohorte y consultar estadísticas y perfiles de habilidades.
 
-First, run the development server:
+## Requisitos
+
+- Node.js 22 o superior
+- Un proyecto de Supabase
+- Variables de `.env.local.example` configuradas en `.env.local`
+- Scripts de `supabase/sql/001_extensions.sql` a `013_auth_hardening.sql` aplicados en orden
+
+La configuración detallada de Supabase está en `docs/SUPABASE_SETUP.md`.
+
+## Desarrollo
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+La aplicación queda disponible en `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Verificación
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm test
+npm run typecheck:auth
+npm run lint
+npm run build
+```
 
-## Learn More
+`npm test` ejecuta las pruebas del contrato, casos de uso, política de refresh y endurecimiento SQL de autenticación.
 
-To learn more about Next.js, take a look at the following resources:
+## Autenticación
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- El access token se conserva solamente en memoria.
+- El refresh token se guarda en una cookie `httpOnly`, `SameSite=Lax` y segura en producción.
+- Un `401` inicia un único refresh compartido y reintenta la solicitud original.
+- El registro requiere una invitación activa.
+- La base deriva la cohorte desde el token y fuerza el rol `participant`; no confía en metadata de rol o cohorte enviada por el cliente.
+- El primer administrador se crea mediante el procedimiento SQL de bootstrap documentado en `docs/SUPABASE_SETUP.md`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Después de modificar autenticación, aplica y verifica especialmente `supabase/sql/013_auth_hardening.sql` en el proyecto Supabase correspondiente.
 
-## Deploy on Vercel
+## Arquitectura
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+El código está separado en cuatro capas:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/domain`: entidades, contratos y validaciones puras.
+- `src/application`: casos de uso y reglas de negocio.
+- `src/infrastructure`: implementaciones de Supabase.
+- `src/presentation` y `src/app`: UI, estado, servicios HTTP y rutas Next.js.
+
+La documentación arquitectónica completa está en `docs/CONSTITUCION.md`.

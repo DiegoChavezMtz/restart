@@ -6,23 +6,30 @@ import { Input } from "@/presentation/atoms/Input";
 import { FormStatusMessage } from "@/presentation/molecules/FormStatusMessage";
 import { AuthCard, AuthCardBody, AuthCardLink, AuthCardTitle } from "@/presentation/molecules/AuthCard";
 import * as authService from "@/presentation/services/authService";
+import { useGuestGuard } from "@/presentation/state/useGuestGuard";
 
 export default function ForgotPasswordPage() {
+  const canRender = useGuestGuard();
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    setError(null);
     setIsSubmitting(true);
     try {
       await authService.requestPasswordReset(email);
-    } finally {
-      // Always show the same message — never reveal whether the email exists.
       setSubmitted(true);
+    } catch {
+      setError("No pudimos enviar el correo en este momento. Intenta nuevamente.");
+    } finally {
       setIsSubmitting(false);
     }
   }
+
+  if (!canRender) return null;
 
   if (submitted) {
     return (
@@ -44,11 +51,14 @@ export default function ForgotPasswordPage() {
         <AuthCardTitle>Recuperar contraseña</AuthCardTitle>
         <Input
           type="email"
+          name="email"
+          autoComplete="email"
           placeholder="Correo"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
+        {error && <FormStatusMessage variant="error">{error}</FormStatusMessage>}
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Enviando…" : "Enviar link"}
         </Button>

@@ -1,15 +1,32 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
+import type { User } from "@/domain/entities";
+import { shouldAttemptSessionRefresh } from "./authRetryPolicy";
+
+export interface ClientAuthSession {
+  accessToken: string;
+  expiresAt: number;
+  user: User;
+}
+
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
 let currentAccessToken: string | null = null;
 let onAuthFailure: (() => void) | null = null;
+let onSessionRefreshed: ((session: ClientAuthSession) => void) | null = null;
 let refreshPromise: Promise<string | null> | null = null;
 
 export function setAccessToken(token: string | null): void {
   currentAccessToken = token;
 }
 
-export function setAuthFailureHandler(handler: (() => void) | null): void {
-  onAuthFailure = handler;
+export function configureAuthHandlers(handlers: {
+  onFailure: (() => void) | null;
+  onRefreshed: ((session: ClientAuthSession) => void) | null;
+}): void {
+  onAuthFailure = handlers.onFailure;
+  onSessionRefreshed = handlers.onRefreshed;
 }
 
 export const axiosClient = axios.create({
@@ -27,23 +44,32 @@ axiosClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 axiosClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as RetryableRequestConfig | undefined;
 
     // Never try to "refresh the refresh call" — infinite-loop guard, and
     // avoids redirecting anonymous first-time visitors to /login just
     // because AuthContext's silent mount-time refresh() got a 401.
-    if (!originalRequest || originalRequest.url === "/auth/refresh") {
+    if (!originalRequest) {
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      shouldAttemptSessionRefresh({
+        url: originalRequest.url,
+        status: error.response?.status,
+        alreadyRetried: originalRequest._retry,
+      })
+    ) {
       originalRequest._retry = true;
 
       if (!refreshPromise) {
-        refreshPromise = axiosClient
-          .post("/auth/refresh")
+        // Use a bare axios call so refresh itself never passes through this
+        // interceptor and can neither recurse nor trigger global auth failure.
+        refreshPromise = axios
+          .post<ClientAuthSession>("/api/auth/refresh", undefined, { withCredentials: true })
           .then((res) => {
             currentAccessToken = res.data.accessToken;
+            onSessionRefreshed?.(res.data);
             return currentAccessToken;
           })
           .catch(() => {
@@ -58,7 +84,7 @@ axiosClient.interceptors.response.use(
 
       const newToken = await refreshPromise;
       if (newToken) {
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        originalRequest.headers.set("Authorization", `Bearer ${newToken}`);
         return axiosClient(originalRequest);
       }
     }

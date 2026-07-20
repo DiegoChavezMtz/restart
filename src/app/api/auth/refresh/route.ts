@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { handleRouteError } from "@/app/api/_lib/handleRouteError";
-import { setRefreshCookie, REFRESH_COOKIE } from "@/app/api/_lib/refreshCookie";
+import { createAuthSessionResponse } from "@/app/api/_lib/authSessionResponse";
+import { clearRefreshCookie, REFRESH_COOKIE } from "@/app/api/_lib/refreshCookie";
 import { UnauthenticatedError } from "@/application/errors";
 import { refreshSession } from "@/application/use-cases/auth/RefreshSession";
 import { SupabaseAuthRepository } from "@/infrastructure/supabase/auth/SupabaseAuthRepository";
@@ -13,14 +14,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const repo = new SupabaseAuthRepository();
     const session = await refreshSession(repo, refreshToken);
 
-    const response = NextResponse.json({
-      accessToken: session.accessToken,
-      expiresAt: session.expiresAt,
-      user: session.user,
-    });
-    setRefreshCookie(response, session.refreshToken);
-    return response;
+    return createAuthSessionResponse(session);
   } catch (error) {
-    return handleRouteError(error);
+    const response = handleRouteError(error);
+    if (error instanceof UnauthenticatedError) clearRefreshCookie(response);
+    return response;
   }
 }
