@@ -12,6 +12,7 @@ const STATUS_LABEL: Record<AttendanceStatus, string> = {
 
 const Group = styled.div`
   display: flex;
+  flex-wrap: wrap;
   gap: ${(props) => props.theme.spacing.sm};
 `;
 
@@ -60,18 +61,20 @@ export interface AttendanceStatusButtonsProps {
 export function AttendanceStatusButtons({ value, onChange, onJustify }: AttendanceStatusButtonsProps) {
   return (
     <Group>
-      {(Object.keys(STATUS_LABEL) as AttendanceStatus[]).map((status) => (
-        <StatusButton
-          key={status}
-          type="button"
-          $tone={status}
-          $active={value === status}
-          aria-pressed={value === status}
-          onClick={() => (status === "justificado" ? onJustify() : onChange(value === status ? null : status))}
-        >
-          {STATUS_LABEL[status]}
-        </StatusButton>
-      ))}
+      {(Object.keys(STATUS_LABEL) as AttendanceStatus[])
+        .filter((status) => status !== "justificado" || value === "falta")
+        .map((status) => (
+          <StatusButton
+            key={status}
+            type="button"
+            $tone={status}
+            $active={value === status}
+            aria-pressed={value === status}
+            onClick={() => (status === "justificado" ? onJustify() : onChange(value === status ? null : status))}
+          >
+            {STATUS_LABEL[status]}
+          </StatusButton>
+        ))}
     </Group>
   );
 }

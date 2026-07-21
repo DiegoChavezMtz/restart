@@ -53,18 +53,28 @@ const CardList = styled.div`
 
 const ParticipantCard = styled.div`
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${(props) => props.theme.spacing.md};
+  flex-direction: column;
+  align-items: stretch;
+  gap: ${(props) => props.theme.spacing.sm};
   padding: ${(props) => props.theme.spacing.md};
   border: 1px solid ${(props) => props.theme.colors.border};
   border-radius: 8px;
   background: ${(props) => props.theme.colors.surface};
+
+  /* First breakpoint in the codebase — ad hoc 640px, no shared token exists yet. */
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: ${(props) => props.theme.spacing.md};
+  }
 `;
 
 const ParticipantName = styled.span`
   color: ${(props) => props.theme.colors.textPrimary};
   font-weight: ${(props) => props.theme.typography.fontWeight.medium};
+  min-width: 0;
+  overflow-wrap: break-word;
 `;
 
 const EmptyState = styled.p`

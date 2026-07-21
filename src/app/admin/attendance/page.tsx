@@ -13,11 +13,17 @@ import * as cohortService from "@/presentation/services/cohortService";
 
 type AttendanceSection = "rollcall" | "summary";
 
-const Section = styled.section`
+const Section = styled.section<{ $topGap?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: ${(props) => props.theme.spacing.md};
   max-width: 900px;
+
+  ${(props) =>
+    props.$topGap &&
+    css`
+      margin-top: ${props.theme.spacing.xl};
+    `}
 `;
 
 const SectionTitle = styled.h2`
@@ -33,6 +39,7 @@ const SelectorRow = styled.div`
 const SectionTabs = styled.div`
   display: flex;
   gap: ${(props) => props.theme.spacing.sm};
+  margin-bottom: ${(props) => props.theme.spacing.lg};
 `;
 
 const SectionTab = styled.button<{ $active: boolean }>`
@@ -90,7 +97,7 @@ export default function AdminAttendancePage() {
       attendanceService.listRecords(cohortId),
     ])
       .then(([detail, sessionList, recordList]) => {
-        setParticipants(detail.participants);
+        setParticipants(detail.participants.filter((participant) => participant.role !== "admin"));
         setSessions(sessionList);
         setRecords(recordList);
       })
@@ -181,7 +188,7 @@ export default function AdminAttendancePage() {
       </Section>
 
       {cohortId && sessions.length > 0 && (
-        <Section>
+        <Section $topGap>
           <SectionTabs>
             <SectionTab type="button" $active={section === "rollcall"} onClick={() => setSection("rollcall")}>
               Pase de lista
@@ -206,6 +213,7 @@ export default function AdminAttendancePage() {
               participants={participants}
               sessions={sessions}
               records={records}
+              cohortName={cohorts.find((cohort) => cohort.id === cohortId)?.name}
               onLoadJustificationFile={attendanceService.getJustificationFileUrl}
             />
           )}

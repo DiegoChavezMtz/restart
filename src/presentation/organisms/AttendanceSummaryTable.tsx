@@ -1,16 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import styled from "styled-components";
+import styled, { useTheme } from "styled-components";
+import { Workbook } from "exceljs";
 import { Badge } from "@/presentation/atoms/Badge";
 import { Button } from "@/presentation/atoms/Button";
 import { Modal } from "@/presentation/atoms/Modal";
 import { Table, Tbody, Td, Th, Thead, Tr } from "@/presentation/atoms/Table";
+import { FormStatusMessage } from "@/presentation/molecules/FormStatusMessage";
 import {
   computeCohortAttendanceSummary,
   computeUserAttendanceSummary,
 } from "@/application/use-cases/attendance/ComputeAttendanceSummary";
 import type { AttendanceRecord, AttendanceSession, User } from "@/domain/entities";
+
+const LOGO_URL = "/branding/restart-logo.png";
+
+function toArgb(hex: string): string {
+  return `FF${hex.replace("#", "").toUpperCase()}`;
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 function formatSessionLabel(sessionDate: string): string {
   const [year, month, day] = sessionDate.split("-").map(Number);
@@ -26,6 +43,24 @@ const SummaryHeader = styled.div`
   flex-wrap: wrap;
   gap: ${(props) => props.theme.spacing.md};
   margin-bottom: ${(props) => props.theme.spacing.lg};
+`;
+
+const TableActions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: ${(props) => props.theme.spacing.md};
+  margin-bottom: ${(props) => props.theme.spacing.md};
+`;
+
+const TableScroll = styled.div`
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+`;
+
+const SummaryTable = styled(Table)`
+  min-width: 640px;
 `;
 
 const RateCell = styled.span<{ $rate: number }>`
@@ -157,6 +192,7 @@ export interface AttendanceSummaryTableProps {
   participants: User[];
   sessions: AttendanceSession[];
   records: AttendanceRecord[];
+  cohortName?: string;
   onLoadJustificationFile: (
     sessionId: string,
     participantId: string
@@ -167,13 +203,17 @@ export function AttendanceSummaryTable({
   participants,
   sessions,
   records,
+  cohortName,
   onLoadJustificationFile,
 }: AttendanceSummaryTableProps) {
+  const theme = useTheme();
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [previewSessionId, setPreviewSessionId] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<{ url: string; fileType: string } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const cohortSummary = computeCohortAttendanceSummary(participants, sessions, records);
   const detailUser = participants.find((p) => p.id === detailUserId) ?? null;
@@ -182,6 +222,114 @@ export function AttendanceSummaryTable({
     detailUser && previewSessionId
       ? records.find((r) => r.participantId === detailUser.id && r.sessionId === previewSessionId)
       : undefined;
+
+  const STATUS_COLOR: Record<string, string> = {
+    asistio: theme.colors.success,
+    retardo: theme.colors.warning,
+    falta: theme.colors.error,
+    justificado: theme.colors.accentPurple,
+  };
+
+  async function handleExport() {
+    setExportError(null);
+    setIsExporting(true);
+    try {
+      const logoResponse = await fetch(LOGO_URL);
+      if (!logoResponse.ok) throw new Error("No se pudo cargar el logo.");
+      const logoBuffer = await logoResponse.arrayBuffer();
+
+      const workbook = new Workbook();
+      workbook.creator = "Restart";
+      workbook.created = new Date();
+
+      const worksheet = workbook.addWorksheet("Concentrado", {
+        views: [{ showGridLines: false }],
+      });
+
+      const totalCols = 1 + sessions.length;
+      worksheet.columns = [{ width: 26 }, ...sessions.map(() => ({ width: 14 }))];
+
+      const bandFill = {
+        type: "pattern" as const,
+        pattern: "solid" as const,
+        fgColor: { argb: toArgb(theme.colors.background) },
+      };
+      const bandRow = worksheet.getRow(1);
+      bandRow.height = 46;
+      for (let col = 1; col <= totalCols; col++) {
+        bandRow.getCell(col).fill = bandFill;
+      }
+
+      const logoImageId = workbook.addImage({ buffer: logoBuffer, extension: "png" });
+      worksheet.addImage(logoImageId, {
+        tl: { col: 0.08, row: 0.12 },
+        ext: { width: 150, height: 39 },
+      });
+
+      worksheet.getRow(2).height = 8;
+
+      const headerRow = worksheet.getRow(3);
+      headerRow.values = ["Nombre", ...sessions.map((session) => formatSessionLabel(session.sessionDate))];
+      headerRow.height = 22;
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: toArgb(theme.colors.primary) },
+        };
+        cell.font = { bold: true, color: { argb: toArgb(theme.colors.background) } };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.border = {
+          top: { style: "thin", color: { argb: toArgb(theme.colors.border) } },
+          bottom: { style: "thin", color: { argb: toArgb(theme.colors.border) } },
+        };
+      });
+      headerRow.getCell(1).alignment = { vertical: "middle", horizontal: "left" };
+
+      participants.forEach((participant, index) => {
+        const row = worksheet.getRow(4 + index);
+
+        const nameCell = row.getCell(1);
+        nameCell.value = participant.fullName;
+        nameCell.font = { bold: true, color: { argb: toArgb(theme.colors.background) } };
+        nameCell.alignment = { vertical: "middle", horizontal: "left" };
+
+        sessions.forEach((session, dayIndex) => {
+          const record = records.find(
+            (r) => r.participantId === participant.id && r.sessionId === session.id
+          );
+          const cell = row.getCell(2 + dayIndex);
+          cell.value = record ? STATUS_BADGE[record.status].label : "Sin registro";
+          cell.font = {
+            bold: Boolean(record),
+            color: {
+              argb: toArgb(record ? STATUS_COLOR[record.status] : theme.colors.border),
+            },
+          };
+          cell.alignment = { vertical: "middle", horizontal: "center" };
+        });
+
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          cell.border = { bottom: { style: "thin", color: { argb: toArgb(theme.colors.border) } } };
+        });
+      });
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `concentrado-asistencia${cohortName ? `-${slugify(cohortName)}` : ""}.xlsx`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setExportError("No se pudo generar el archivo de Excel.");
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   function openPreview(sessionId: string) {
     if (!detailUserId) return;
@@ -197,6 +345,13 @@ export function AttendanceSummaryTable({
 
   return (
     <>
+      <TableActions>
+        {exportError && <FormStatusMessage variant="error">{exportError}</FormStatusMessage>}
+        <Button variant="secondary" onClick={handleExport} disabled={participants.length === 0 || isExporting}>
+          {isExporting ? "Generando…" : "Exportar a Excel"}
+        </Button>
+      </TableActions>
+
       <SummaryHeader>
         <Badge>{cohortSummary.totalSessions} sesiones registradas</Badge>
         <Badge tone="success">{cohortSummary.averageAttendanceRate}% asistencia promedio</Badge>
@@ -209,51 +364,53 @@ export function AttendanceSummaryTable({
         </Badge>
       </SummaryHeader>
 
-      <Table>
-        <Thead>
-          <Tr>
-            <Th>Nombre</Th>
-            <Th>Asistencias</Th>
-            <Th>Retardos</Th>
-            <Th>Justificados</Th>
-            <Th>Faltas</Th>
-            <Th>% Asistencia</Th>
-            <Th></Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {participants.map((participant) => {
-            const summary = computeUserAttendanceSummary(participant.id, sessions, records);
-            return (
-              <Tr key={participant.id}>
-                <Td>{participant.fullName}</Td>
-                <Td>{summary.present}</Td>
-                <Td>{summary.late}</Td>
-                <Td>{summary.justified}</Td>
-                <Td>
-                  <FaltasCell
-                    tabIndex={0}
-                    aria-label={`Faltas normales: ${summary.absent}. Faltas por retardo acumulado: ${summary.derivedAbsences}.`}
-                  >
-                    {summary.effectiveAbsent}
-                    <FaltasTooltip>
-                      Normales: {summary.absent} · Por retardo: {summary.derivedAbsences}
-                    </FaltasTooltip>
-                  </FaltasCell>
-                </Td>
-                <Td>
-                  <RateCell $rate={summary.attendanceRate}>{summary.attendanceRate}%</RateCell>
-                </Td>
-                <Td>
-                  <Button variant="secondary" onClick={() => setDetailUserId(participant.id)}>
-                    Ver detalle
-                  </Button>
-                </Td>
-              </Tr>
-            );
-          })}
-        </Tbody>
-      </Table>
+      <TableScroll>
+        <SummaryTable>
+          <Thead>
+            <Tr>
+              <Th>Nombre</Th>
+              <Th>Asistencias</Th>
+              <Th>Retardos</Th>
+              <Th>Justificados</Th>
+              <Th>Faltas</Th>
+              <Th>% Asistencia</Th>
+              <Th></Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {participants.map((participant) => {
+              const summary = computeUserAttendanceSummary(participant.id, sessions, records);
+              return (
+                <Tr key={participant.id}>
+                  <Td>{participant.fullName}</Td>
+                  <Td>{summary.present}</Td>
+                  <Td>{summary.late}</Td>
+                  <Td>{summary.justified}</Td>
+                  <Td>
+                    <FaltasCell
+                      tabIndex={0}
+                      aria-label={`Faltas normales: ${summary.absent}. Faltas por retardo acumulado: ${summary.derivedAbsences}.`}
+                    >
+                      {summary.effectiveAbsent}
+                      <FaltasTooltip>
+                        Normales: {summary.absent} · Por retardo: {summary.derivedAbsences}
+                      </FaltasTooltip>
+                    </FaltasCell>
+                  </Td>
+                  <Td>
+                    <RateCell $rate={summary.attendanceRate}>{summary.attendanceRate}%</RateCell>
+                  </Td>
+                  <Td>
+                    <Button variant="secondary" onClick={() => setDetailUserId(participant.id)}>
+                      Ver detalle
+                    </Button>
+                  </Td>
+                </Tr>
+              );
+            })}
+          </Tbody>
+        </SummaryTable>
+      </TableScroll>
 
       <Modal
         open={detailUser !== null}
