@@ -6,6 +6,6 @@ export function listAttendanceSessions(
   repo: AttendanceRepository,
   input: { cohortId: string; requestedBy: User; adminAccessToken: string }
 ): Promise<AttendanceSession[]> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
   return repo.listSessionsByCohort(input.cohortId, input.adminAccessToken);
 }

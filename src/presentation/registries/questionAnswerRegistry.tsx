@@ -32,9 +32,9 @@ interface QuestionAnswerDefinition<T extends QuestionType> {
 
 const TextArea = styled.textarea`
   width: 100%;
-  min-height: 80px;
-  padding: ${(props) => props.theme.spacing.sm};
-  border-radius: 8px;
+  min-height: 128px;
+  padding: ${(props) => props.theme.spacing.md};
+  border-radius: 10px;
   border: 1px solid ${(props) => props.theme.colors.border};
   background: ${(props) => props.theme.colors.background};
   color: ${(props) => props.theme.colors.textPrimary};
@@ -42,9 +42,10 @@ const TextArea = styled.textarea`
   font-size: ${(props) => props.theme.typography.fontSize.md};
   font-family: inherit;
 
-  &:focus {
-    outline: 2px solid ${(props) => props.theme.colors.primary};
-    outline-offset: 1px;
+  &:focus-visible {
+    outline: none;
+    border-color: ${(props) => props.theme.colors.focus};
+    box-shadow: 0 0 0 3px color-mix(in srgb, ${(props) => props.theme.colors.focus} 24%, transparent);
   }
 
   &:disabled {
@@ -65,7 +66,7 @@ const OptionRow = styled(motion.label)<{ $selected: boolean }>`
   gap: ${(props) => props.theme.spacing.sm};
   min-height: 44px;
   padding: ${(props) => props.theme.spacing.xs} ${(props) => props.theme.spacing.sm};
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid
     ${(props) => (props.$selected ? props.theme.colors.primary : props.theme.colors.border)};
   background: ${(props) => (props.$selected ? props.theme.colors.surfaceElevated : "transparent")};

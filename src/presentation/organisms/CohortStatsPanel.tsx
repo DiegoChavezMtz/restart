@@ -9,36 +9,76 @@ import type { GetCohortStatsForFormResult } from "@/presentation/services/statsS
 const Header = styled.div`
   display: flex;
   align-items: center;
-  gap: ${(props) => props.theme.spacing.md};
-  margin-bottom: ${(props) => props.theme.spacing.lg};
+  justify-content: space-between;
+  gap: ${(props) => props.theme.spacing.lg};
+  padding: ${(props) => props.theme.spacing.lg};
+  border: 1px solid ${(props) => props.theme.colors.border};
+  border-radius: 14px;
+  background: ${(props) => props.theme.colors.background};
+  min-width: 0;
+
+  @media (max-width: 560px) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 `;
 
 const HeaderTitle = styled.h3`
-  font-size: ${(props) => props.theme.typography.fontSize.md};
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: ${(props) => props.theme.typography.fontSize.lg};
   color: ${(props) => props.theme.colors.textPrimary};
 `;
 
 const QuestionList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${(props) => props.theme.spacing.lg};
+  gap: ${(props) => props.theme.spacing.xl};
 `;
 
 const QuestionCard = styled.div`
-  padding: ${(props) => props.theme.spacing.md};
+  display: flex;
+  flex-direction: column;
+  gap: ${(props) => props.theme.spacing.md};
+  padding: ${(props) => props.theme.spacing.xl};
   border: 1px solid ${(props) => props.theme.colors.border};
-  border-radius: 8px;
+  border-radius: 14px;
+  background: ${(props) => props.theme.colors.background};
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+
+  @media (max-width: 640px) {
+    padding: ${(props) => props.theme.spacing.lg};
+  }
 `;
 
 const QuestionLabel = styled.p`
+  overflow-wrap: anywhere;
   color: ${(props) => props.theme.colors.textPrimary};
   font-weight: ${(props) => props.theme.typography.fontWeight.medium};
-  margin-bottom: ${(props) => props.theme.spacing.sm};
+  font-size: ${(props) => props.theme.typography.fontSize.md};
 `;
 
 const Meta = styled.p`
+  overflow-wrap: anywhere;
   color: ${(props) => props.theme.colors.textSecondary};
   font-size: ${(props) => props.theme.typography.fontSize.sm};
+`;
+
+const ChartLabel = styled.p`
+  color: ${(props) => props.theme.colors.textTertiary};
+  font-size: ${(props) => props.theme.typography.fontSize.xs};
+  font-weight: ${(props) => props.theme.typography.fontWeight.bold};
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+`;
+
+const ChartFrame = styled.div`
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 `;
 
 const OpenTextList = styled.ul`
@@ -47,6 +87,8 @@ const OpenTextList = styled.ul`
   gap: ${(props) => props.theme.spacing.xs};
   padding-left: ${(props) => props.theme.spacing.md};
   color: ${(props) => props.theme.colors.textPrimary};
+  overflow-wrap: anywhere;
+  word-break: break-word;
 `;
 
 export interface CohortStatsPanelProps {
@@ -75,14 +117,16 @@ export function CohortStatsPanel({ result }: CohortStatsPanelProps) {
                 <Meta>
                   Promedio: {likert.average} · Sin respuesta: {likert.noAnswerCount}
                 </Meta>
-                <LikertDistributionChart breakdown={likert} />
+                <ChartLabel>Distribución de respuestas</ChartLabel>
+                <ChartFrame><LikertDistributionChart breakdown={likert} /></ChartFrame>
               </>
             )}
 
             {choice && (
               <>
                 <Meta>Sin respuesta: {choice.noAnswerCount}</Meta>
-                <OptionPercentageChart breakdown={choice} />
+                <ChartLabel>Porcentaje por opción</ChartLabel>
+                <ChartFrame><OptionPercentageChart breakdown={choice} /></ChartFrame>
               </>
             )}
 

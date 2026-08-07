@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { handleRouteError } from "@/app/api/_lib/handleRouteError";
+import { readJsonObject } from "@/app/api/_lib/readJsonBody";
+import { requiredString } from "@/app/api/_lib/formRequestValidation";
 import { requireUser } from "@/app/api/_lib/requireUser";
 import { UseCaseError } from "@/application/errors";
 import { closeForm } from "@/application/use-cases/forms/CloseForm";
@@ -14,7 +16,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
     const { id } = await params;
     const authRepo = new SupabaseAuthRepository();
     const { user, accessToken } = await requireUser(request, authRepo);
-    const { status } = await request.json();
+    const status = requiredString(await readJsonObject(request), "status");
 
     const formRepo = new SupabaseFormRepository();
     const input = { formId: id, requestedBy: user, adminAccessToken: accessToken };

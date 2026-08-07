@@ -6,7 +6,7 @@ export async function updateFormDetails(
   repo: FormRepository,
   input: UpdateFormDetailsInput & { formId: string; requestedBy: User; adminAccessToken: string }
 ): Promise<Form> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
 
   const existing = await repo.getFormById(input.formId, input.adminAccessToken);
   if (!existing) throw new FormNotFoundError();

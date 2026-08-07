@@ -1,6 +1,6 @@
 import type { AnswerValue, QuestionConfig, QuestionType } from "../value-objects";
 
-export type UserRole = "admin" | "participant";
+export type UserRole = "super_admin" | "admin" | "psicologa" | "usuario" | "test";
 
 export interface User {
   id: string;
@@ -8,6 +8,7 @@ export interface User {
   fullName: string;
   role: UserRole;
   cohortId: string | null;
+  isActive: boolean;
   createdAt: string;
 }
 
@@ -18,6 +19,7 @@ export interface Invitation {
   createdBy: string;
   isActive: boolean;
   createdAt: string;
+  intendedRole: "usuario" | "test";
 }
 
 export interface Cohort {
@@ -27,7 +29,7 @@ export interface Cohort {
   createdAt: string;
 }
 
-export type FormStatus = "draft" | "published" | "closed";
+export type FormStatus = "draft" | "published" | "closed" | "archived";
 
 export interface Form {
   id: string;
@@ -134,4 +136,82 @@ export interface AttendanceRecord {
   recordedAt: string;
   // Solo presente cuando status === "justificado".
   justification: AttendanceJustification | null;
+}
+
+export type AppointmentModality = "remote" | "in_person";
+export type AppointmentType = "mentoria" | "atencion_psicologica" | "orientacion_laboral";
+export type AppointmentStatus =
+  | "reserved"
+  | "completed"
+  | "cancelled_by_participant"
+  | "cancelled_by_admin"
+  | "no_show";
+
+export interface AppointmentTag {
+  id: string;
+  name: string;
+}
+
+export interface AppointmentSlot {
+  id: string;
+  mentorId: string;
+  mentorName: string;
+  appointmentType: AppointmentType;
+  appointmentTypeLabel: string;
+  startsAt: string;
+  endsAt: string;
+  durationMinutes: 30 | 60 | 90 | 120;
+  modality: AppointmentModality;
+  locationText: string | null;
+  cohortIds: string[];
+  status: "available" | "booked" | "expired" | "withdrawn";
+}
+
+export interface Appointment {
+  id: string;
+  slotId: string;
+  participantId: string;
+  participantName: string;
+  participantCohortName: string;
+  mentorId: string;
+  mentorName: string;
+  appointmentType: AppointmentType;
+  appointmentTypeLabel: string;
+  startsAt: string;
+  endsAt: string;
+  durationMinutes: 30 | 60 | 90 | 120;
+  modality: AppointmentModality;
+  locationText: string | null;
+  remoteMeetingUrl: string | null;
+  status: AppointmentStatus;
+  tags: AppointmentTag[];
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface AppointmentFormTemplate {
+  id: string;
+  title: string;
+  description: string | null;
+  questionCount: number;
+  createdBy: string;
+  updatedAt: string;
+}
+
+export interface AppointmentFollowUp {
+  appointmentId: string;
+  notes: string;
+  goals: string[];
+  commitments: { description: string; completed: boolean }[];
+  forms: { templateId: string; title: string; status: "in_progress" | "completed" }[];
+}
+
+export interface AppointmentParticipantDetail {
+  id: string;
+  fullName: string;
+  email: string;
+  cohortName: string;
+  joinedAt: string;
+  attendanceSummary: { attended: number; late: number; absent: number };
+  appointmentHistory: { id: string; startsAt: string; type: string; status: AppointmentStatus; mentorName: string }[];
 }

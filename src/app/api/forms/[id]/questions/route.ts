@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { handleRouteError } from "@/app/api/_lib/handleRouteError";
+import { readJsonObject } from "@/app/api/_lib/readJsonBody";
+import { optionalTimeLimit, parseQuestionConfig, parseQuestionType, requiredBoolean, requiredString } from "@/app/api/_lib/formRequestValidation";
 import { requireUser } from "@/app/api/_lib/requireUser";
 import { addQuestion } from "@/application/use-cases/forms/AddQuestion";
+import { InvalidQuestionConfigError } from "@/application/errors";
 import { SupabaseAuthRepository } from "@/infrastructure/supabase/auth/SupabaseAuthRepository";
 import { SupabaseFormRepository } from "@/infrastructure/supabase/repositories/SupabaseFormRepository";
 
@@ -12,7 +15,13 @@ export async function POST(request: NextRequest, { params }: RouteParams): Promi
     const { id } = await params;
     const authRepo = new SupabaseAuthRepository();
     const { user, accessToken } = await requireUser(request, authRepo);
-    const { label, type, config, required, timeLimitSeconds } = await request.json();
+    const body = await readJsonObject(request);
+    const label = requiredString(body, "label");
+    const type = parseQuestionType(body.type);
+    const config = parseQuestionConfig(body.config);
+    if (type !== config.type) throw new InvalidQuestionConfigError("type y config.type deben coincidir.");
+    const required = requiredBoolean(body, "required");
+    const timeLimitSeconds = optionalTimeLimit(body) ?? null;
 
     const formRepo = new SupabaseFormRepository();
     const question = await addQuestion(formRepo, {
@@ -21,7 +30,7 @@ export async function POST(request: NextRequest, { params }: RouteParams): Promi
       type,
       config,
       required,
-      timeLimitSeconds: timeLimitSeconds ?? null,
+      timeLimitSeconds,
       requestedBy: user,
       adminAccessToken: accessToken,
     });

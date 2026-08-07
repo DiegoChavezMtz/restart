@@ -11,6 +11,6 @@ export function clearAttendanceStatus(
     adminAccessToken: string;
   }
 ): Promise<void> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
   return repo.clearStatus(input.sessionId, input.participantId, input.adminAccessToken);
 }

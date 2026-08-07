@@ -22,7 +22,7 @@ export async function getParticipantHistory(
   responseRepo: ResponseRepository,
   input: { participantId: string; requestedBy: User; adminAccessToken: string }
 ): Promise<GetParticipantHistoryResult> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
 
   const participant = await statsRepo.getUserById(input.participantId, input.adminAccessToken);
   if (!participant) throw new UserNotFoundError();

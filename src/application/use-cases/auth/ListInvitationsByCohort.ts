@@ -6,6 +6,6 @@ export function listInvitationsByCohort(
   repo: AuthRepository,
   input: { cohortId: string; requestedBy: User; adminAccessToken: string }
 ): Promise<Invitation[]> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
   return repo.listInvitationsByCohort(input.cohortId, input.adminAccessToken);
 }

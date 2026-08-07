@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import styled from "styled-components";
 import { Badge } from "@/presentation/atoms/Badge";
 import { Button } from "@/presentation/atoms/Button";
@@ -30,14 +30,14 @@ function encodeBranchSelection(branch: QuestionOptionBranch | undefined): string
 const Backdrop = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.62);
   display: flex;
   justify-content: flex-end;
   z-index: 100;
 `;
 
 const Drawer = styled.div`
-  width: 400px;
+  width: min(100%, 520px);
   max-width: 100%;
   height: 100%;
   background: ${(props) => props.theme.colors.surfaceElevated};
@@ -46,6 +46,12 @@ const Drawer = styled.div`
   flex-direction: column;
   gap: ${(props) => props.theme.spacing.md};
   overflow-y: auto;
+  box-shadow: -16px 0 48px rgba(0, 0, 0, 0.28);
+
+  @media (max-width: 640px) {
+    width: 100%;
+    padding: ${(props) => props.theme.spacing.lg};
+  }
 `;
 
 const Title = styled.h3`
@@ -55,8 +61,11 @@ const Title = styled.h3`
 
 const Actions = styled.div`
   display: flex;
+  flex-wrap: wrap;
   gap: ${(props) => props.theme.spacing.sm};
   margin-top: auto;
+  padding-top: ${(props) => props.theme.spacing.md};
+  border-top: 1px solid ${(props) => props.theme.colors.border};
 `;
 
 const CheckboxRow = styled.label`
@@ -118,6 +127,8 @@ export function QuestionEditorPanel({
   onCancel,
   onDelete,
 }: QuestionEditorPanelProps) {
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
   const [label, setLabel] = useState(question?.label ?? "");
   const [type, setType] = useState<QuestionType>(question?.type ?? "likert");
   const [config, setConfig] = useState<QuestionConfig>(
@@ -137,6 +148,19 @@ export function QuestionEditorPanel({
     return map;
   });
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    drawerRef.current?.focus();
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onCancel();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [onCancel]);
 
   function handleTypeChange(newType: QuestionType) {
     setType(newType);
@@ -205,8 +229,8 @@ export function QuestionEditorPanel({
 
   return (
     <Backdrop onClick={onCancel}>
-      <Drawer onClick={(e) => e.stopPropagation()}>
-        <Title>{mode === "create" ? "Nueva pregunta" : "Editar pregunta"}</Title>
+      <Drawer ref={drawerRef} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
+        <Title id={titleId}>{mode === "create" ? "Nueva pregunta" : "Editar pregunta"}</Title>
 
         <FormField label="Etiqueta">
           <Input value={label} onChange={(e) => setLabel(e.target.value)} />
@@ -313,7 +337,7 @@ export function QuestionEditorPanel({
             Cancelar
           </Button>
           {mode === "edit" && onDelete && (
-            <Button type="button" variant="secondary" onClick={onDelete}>
+            <Button type="button" variant="destructive" onClick={onDelete}>
               Borrar
             </Button>
           )}

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/presentation/atoms/Button";
 import { Input } from "@/presentation/atoms/Input";
+import { FormField } from "@/presentation/molecules/FormField";
 import { FormStatusMessage } from "@/presentation/molecules/FormStatusMessage";
 import { AuthCard, AuthCardBody, AuthCardTitle } from "@/presentation/molecules/AuthCard";
 import { useAuth } from "@/presentation/state/AuthContext";
@@ -22,7 +23,7 @@ const LogoRow = styled.div`
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<AuthCard><AuthCardBody>Validando invitación…</AuthCardBody></AuthCard>}>
       <RegisterForm />
     </Suspense>
   );
@@ -102,43 +103,11 @@ function RegisterForm() {
           <Logo />
         </LogoRow>
         <AuthCardTitle>Crear cuenta</AuthCardTitle>
-        <Input
-          type="text"
-          name="name"
-          autoComplete="name"
-          placeholder="Nombre completo"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          required
-        />
-        <Input
-          type="email"
-          name="email"
-          autoComplete="email"
-          placeholder="Correo"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <Input
-          type="password"
-          name="password"
-          autoComplete="new-password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <Input
-          type="password"
-          name="confirmPassword"
-          autoComplete="new-password"
-          placeholder="Confirmar contraseña"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-        />
-        {error && <FormStatusMessage variant="error">{error}</FormStatusMessage>}
+        <FormField label="Nombre completo" htmlFor="register-name"><Input id="register-name" type="text" name="name" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required /></FormField>
+        <FormField label="Correo" htmlFor="register-email"><Input id="register-email" type="email" name="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></FormField>
+        <FormField label="Contraseña" htmlFor="register-password"><Input id="register-password" type="password" name="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></FormField>
+        <FormField label="Confirmar contraseña" htmlFor="register-confirm-password"><Input id="register-confirm-password" type="password" name="confirmPassword" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required /></FormField>
+        {error && <FormStatusMessage variant="error" role="alert">{error}</FormStatusMessage>}
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creando cuenta…" : "Crear cuenta"}
         </Button>

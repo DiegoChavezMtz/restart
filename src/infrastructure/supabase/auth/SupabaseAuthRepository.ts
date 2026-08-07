@@ -179,12 +179,13 @@ export class SupabaseAuthRepository implements AuthRepository {
   async generateInvitation(
     cohortId: string,
     createdBy: string,
-    adminAccessToken: string
+    adminAccessToken: string,
+    intendedRole: "usuario" | "test" = "usuario"
   ): Promise<Invitation> {
     const client = createServerSupabaseClient(adminAccessToken);
     const { data: row, error } = await client
       .from("invitations")
-      .insert({ cohort_id: cohortId, created_by: createdBy })
+      .insert({ cohort_id: cohortId, created_by: createdBy, intended_role: intendedRole })
       .select("*")
       .single();
     if (error || !row) throw new UseCaseError(error?.message ?? "Failed to create invitation", 500);

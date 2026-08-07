@@ -58,6 +58,8 @@ Ve a **SQL Editor** (ícono de terminal en el menú lateral) → **New query**. 
 | 5 | `supabase/sql/005_registration.sql` | Crea el trigger seguro `handle_new_user`, que crea el perfil únicamente cuando el alta incluye una invitación activa. |
 | 6–12 | `supabase/sql/006_*.sql` … `012_*.sql` | Crea formularios, habilidades, asignaciones, respuestas, branching e instrucciones. |
 | 13 | `supabase/sql/013_auth_hardening.sql` | Obliga a derivar la cohorte desde una invitación activa, fija el rol de registro en `participant` y bloquea cambios propios de rol/cohorte. Es obligatorio también en instalaciones existentes. |
+| 14 | `supabase/sql/014_attendance.sql` | Agrega sesiones, registros y justificaciones de asistencia con RLS y almacenamiento privado. |
+| 15–23 | `supabase/sql/015_appointment_foundation.sql` … `023_appointment_scheduling_jobs.sql` | Agrega citas y mentorías: catálogos, disponibilidad, reserva transaccional, expedientes, formularios internos versionados, Google Calendar, notificaciones, RLS, auditoría y funciones para trabajos programados. |
 
 Todos son **idempotentes** — puedes volver a correr cualquiera sin romper nada (usan `if not exists` / `drop policy if exists` antes de recrear). Si algo falla a mitad de camino, corrige el error y vuelve a correr el mismo script completo.
 
@@ -101,23 +103,35 @@ Esto **no es opcional**: `SupabaseAuthRepository.registerViaInvitation()` (`src/
 
 ---
 
-## 8. Crear el primer usuario admin (problema huevo-y-gallina)
+## 8. Crear el primer usuario super_admin (problema huevo-y-gallina)
 
-El único camino de registro del código es `RegisterViaInvitation`, que requiere un token de invitación — y generar una invitación (`POST /api/invitations`) requiere ya ser admin. Para romper el círculo, el primer admin se crea directo desde el dashboard:
+El único camino de registro autónomo del código es `RegisterViaInvitation`, que
+requiere un token de invitación. Las invitaciones sólo crean cuentas `usuario` o
+`test`; por seguridad, nunca crean cuentas de personal. Para romper el círculo,
+el primer `super_admin` se crea de forma controlada desde el dashboard:
 
 1. **Authentication** → **Users** → **Add user** → **Create new user**.
 2. Ingresa el email y una contraseña (o marca "Auto Confirm User" si no quieres que pida confirmación para este usuario).
 3. Esto crea una fila en `auth.users`. Al no existir una invitación, el trigger endurecido no crea un perfil público automáticamente.
 4. Ve a **SQL Editor** y crea explícitamente el perfil administrativo:
    ```sql
-   insert into public.users (id, email, full_name, role, cohort_id)
-   select id, email, 'Administrador', 'admin', null
+   insert into public.users (id, email, full_name, role, cohort_id, is_active)
+   select id, email, 'Super administrador', 'super_admin', null, true
    from auth.users
    where email = 'tu-email@ejemplo.com'
    on conflict (id) do update
-     set role = 'admin', email = excluded.email, full_name = excluded.full_name;
+     set role = 'super_admin',
+         email = excluded.email,
+         full_name = excluded.full_name,
+         is_active = true;
    ```
-5. Confirma en **Table Editor → users** que la fila tiene `role = admin`.
+5. Confirma en **Table Editor → users** que la fila tiene
+   `role = super_admin` e `is_active = true`.
+
+> Este paso es exclusivamente de arranque. Una vez que exista el primer
+> `super_admin`, los roles y capacidades se administran mediante los flujos
+> restringidos de la aplicación/RPC. No uses este procedimiento para promover
+> cuentas de forma cotidiana.
 
 ---
 
@@ -182,7 +196,7 @@ Con el dev server corriendo (`npm run dev`, en `http://localhost:3000`):
 ## Referencia rápida de archivos relacionados
 
 - `.env.local.example` — plantilla de variables de entorno (paso 3).
-- `supabase/sql/001_extensions.sql` … `013_auth_hardening.sql` — scripts SQL (paso 4).
+- `supabase/sql/001_extensions.sql` … `023_appointment_scheduling_jobs.sql` — scripts SQL (paso 4).
 - `src/infrastructure/supabase/client.ts` — los tres clientes Supabase (browser/server/admin).
 - `src/infrastructure/supabase/auth/SupabaseAuthRepository.ts` — implementación de todos los métodos de Auth contra Supabase.
 - `docs/CONSTITUCION.md` — fuente de verdad arquitectónica del proyecto.

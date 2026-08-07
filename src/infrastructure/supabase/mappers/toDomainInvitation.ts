@@ -7,6 +7,7 @@ interface InvitationRow {
   created_by: string;
   is_active: boolean;
   created_at: string;
+  intended_role: "usuario" | "test";
 }
 
 export function toDomainInvitation(row: InvitationRow): Invitation {
@@ -17,5 +18,6 @@ export function toDomainInvitation(row: InvitationRow): Invitation {
     createdBy: row.created_by,
     isActive: row.is_active,
     createdAt: row.created_at,
+    intendedRole: row.intended_role,
   };
 }

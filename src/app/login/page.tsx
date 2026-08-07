@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import styled from "styled-components";
 import { Button } from "@/presentation/atoms/Button";
 import { Input } from "@/presentation/atoms/Input";
+import { FormField } from "@/presentation/molecules/FormField";
 import { FormStatusMessage } from "@/presentation/molecules/FormStatusMessage";
 import { AuthCard, AuthCardBody, AuthCardLink, AuthCardTitle } from "@/presentation/molecules/AuthCard";
 import { Logo } from "@/presentation/molecules/Logo";
@@ -20,7 +21,7 @@ const LogoRow = styled.div`
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<AuthCard><AuthCardBody>Preparando acceso…</AuthCardBody></AuthCard>}>
       <LoginForm />
     </Suspense>
   );
@@ -65,25 +66,9 @@ function LoginForm() {
           <Logo />
         </LogoRow>
         <AuthCardTitle>Iniciar sesión</AuthCardTitle>
-        <Input
-          type="email"
-          name="email"
-          autoComplete="email"
-          placeholder="Correo"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <Input
-          type="password"
-          name="password"
-          autoComplete="current-password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        {error && <FormStatusMessage variant="error">{error}</FormStatusMessage>}
+        <FormField label="Correo" htmlFor="login-email"><Input id="login-email" type="email" name="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></FormField>
+        <FormField label="Contraseña" htmlFor="login-password"><Input id="login-password" type="password" name="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></FormField>
+        {error && <FormStatusMessage variant="error" role="alert">{error}</FormStatusMessage>}
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Ingresando…" : "Ingresar"}
         </Button>

@@ -78,6 +78,14 @@ export function validateQuestionSkillWeight(weight: number): string | null {
 // likert -> number, open_text -> string, single_choice -> string, checkbox -> string[].
 export type AnswerValue = number | string | string[];
 
+/** True only when an answer contains evaluable information. */
+export function isMeaningfulAnswerValue(value: AnswerValue | null): boolean {
+  if (value === null) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (Array.isArray(value)) return value.some((item) => item.trim().length > 0);
+  return Number.isFinite(value);
+}
+
 /**
  * Pure validation for Answer.value against the question's config — same
  * reused-by-client-and-server pattern as validateQuestionConfig.

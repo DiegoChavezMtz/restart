@@ -27,11 +27,19 @@ const Track = styled.span<{ $checked: boolean }>`
 const HiddenInput = styled.input`
   position: absolute;
   opacity: 0;
-  width: 0;
-  height: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+
+  &:focus-visible + ${Track} {
+    outline: 2px solid ${(props) => props.theme.colors.focus};
+    outline-offset: 3px;
+  }
 `;
 
 const Wrapper = styled.label`
+  position: relative;
   display: inline-flex;
   align-items: center;
   cursor: pointer;

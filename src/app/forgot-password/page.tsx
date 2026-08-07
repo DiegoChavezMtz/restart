@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/presentation/atoms/Button";
 import { Input } from "@/presentation/atoms/Input";
+import { FormField } from "@/presentation/molecules/FormField";
 import { FormStatusMessage } from "@/presentation/molecules/FormStatusMessage";
 import { AuthCard, AuthCardBody, AuthCardLink, AuthCardTitle } from "@/presentation/molecules/AuthCard";
 import * as authService from "@/presentation/services/authService";
@@ -49,16 +50,8 @@ export default function ForgotPasswordPage() {
     <AuthCard>
       <AuthCardBody as="form" onSubmit={handleSubmit}>
         <AuthCardTitle>Recuperar contraseña</AuthCardTitle>
-        <Input
-          type="email"
-          name="email"
-          autoComplete="email"
-          placeholder="Correo"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        {error && <FormStatusMessage variant="error">{error}</FormStatusMessage>}
+        <FormField label="Correo" htmlFor="forgot-email"><Input id="forgot-email" type="email" name="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></FormField>
+        {error && <FormStatusMessage variant="error" role="alert">{error}</FormStatusMessage>}
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Enviando…" : "Enviar link"}
         </Button>

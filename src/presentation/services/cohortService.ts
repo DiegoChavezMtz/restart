@@ -27,8 +27,8 @@ export async function listInvitationsByCohort(cohortId: string): Promise<Invitat
   return data;
 }
 
-export async function generateInvitation(cohortId: string): Promise<Invitation> {
-  const { data } = await axiosClient.post<Invitation>("/invitations", { cohortId });
+export async function generateInvitation(cohortId: string, intendedRole: "usuario" | "test" = "usuario"): Promise<Invitation> {
+  const { data } = await axiosClient.post<Invitation>("/invitations", { cohortId, intendedRole });
   return data;
 }
 

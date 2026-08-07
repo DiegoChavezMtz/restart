@@ -14,9 +14,14 @@ const Row = styled.div<{ $isDragging: boolean }>`
   gap: ${(props) => props.theme.spacing.sm};
   padding: ${(props) => props.theme.spacing.sm};
   border: 1px solid ${(props) => props.theme.colors.border};
-  border-radius: 8px;
+  border-radius: 12px;
   background: ${(props) => props.theme.colors.background};
   opacity: ${(props) => (props.$isDragging ? 0.5 : 1)};
+
+  @media (max-width: 640px) {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
 `;
 
 const DragHandle = styled.button`
@@ -34,12 +39,17 @@ const DragHandle = styled.button`
 
 const QuestionLabel = styled.span`
   flex: 1;
+  min-width: 180px;
   color: ${(props) => props.theme.colors.textPrimary};
 `;
 
 const Actions = styled.div`
   display: flex;
   gap: ${(props) => props.theme.spacing.xs};
+
+  @media (max-width: 640px) {
+    width: 100%;
+  }
 `;
 
 export interface DraggableQuestionRowProps {
@@ -69,7 +79,7 @@ export function DraggableQuestionRow({
 
   return (
     <Row ref={setNodeRef} style={style} $isDragging={isDragging}>
-      <DragHandle type="button" disabled={disabled} {...attributes} {...listeners}>
+      <DragHandle type="button" disabled={disabled} aria-label={`Reordenar pregunta: ${question.label}`} {...attributes} {...listeners}>
         ⠿
       </DragHandle>
       <QuestionLabel>{question.label}</QuestionLabel>

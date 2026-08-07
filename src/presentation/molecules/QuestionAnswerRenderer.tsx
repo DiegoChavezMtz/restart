@@ -8,15 +8,17 @@ import type { AnswerValue, QuestionConfig } from "@/domain/value-objects";
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${(props) => props.theme.spacing.sm};
-  padding: ${(props) => props.theme.spacing.md};
-  border: 1px solid ${(props) => props.theme.colors.border};
-  border-radius: 8px;
+  gap: ${(props) => props.theme.spacing.md};
 `;
 
-const QuestionLabel = styled.span`
+const QuestionLabel = styled.h2`
   color: ${(props) => props.theme.colors.textPrimary};
-  font-weight: ${(props) => props.theme.typography.fontWeight.medium};
+  font-size: ${(props) => props.theme.typography.fontSize.lg};
+  line-height: ${(props) => props.theme.typography.lineHeight.normal};
+`;
+
+const Required = styled.span`
+  color: ${(props) => props.theme.colors.error};
 `;
 
 export interface QuestionAnswerRendererProps {
@@ -47,7 +49,7 @@ export function QuestionAnswerRenderer({
     <Wrapper>
       <QuestionLabel>
         {question.label}
-        {question.required && " *"}
+        {question.required && <Required aria-label="Obligatoria"> *</Required>}
       </QuestionLabel>
       <AnswerInput config={question.config} value={value} onChange={onChange} disabled={disabled} />
     </Wrapper>

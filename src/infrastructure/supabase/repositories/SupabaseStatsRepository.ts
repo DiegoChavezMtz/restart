@@ -12,7 +12,8 @@ export class SupabaseStatsRepository implements StatsRepository {
     const { data, error } = await client
       .from("form_responses")
       .select("*")
-      .eq("form_id", formId);
+      .eq("form_id", formId)
+      .eq("is_test_response", false);
     if (error) throw new UseCaseError(error.message, 500);
     return (data ?? []).map(toDomainFormResponse);
   }
@@ -21,8 +22,9 @@ export class SupabaseStatsRepository implements StatsRepository {
     const client = createServerSupabaseClient(adminAccessToken);
     const { data, error } = await client
       .from("answers")
-      .select("*, form_responses!inner(form_id)")
-      .eq("form_responses.form_id", formId);
+      .select("*, form_responses!inner(form_id,is_test_response)")
+      .eq("form_responses.form_id", formId)
+      .eq("form_responses.is_test_response", false);
     if (error) throw new UseCaseError(error.message, 500);
     return (data ?? []).map(toDomainAnswer);
   }

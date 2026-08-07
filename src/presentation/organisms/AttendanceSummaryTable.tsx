@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import styled, { useTheme } from "styled-components";
+import { useMemo, useState } from "react";
+import styled from "styled-components";
 import { Workbook } from "exceljs";
 import { Badge } from "@/presentation/atoms/Badge";
 import { Button } from "@/presentation/atoms/Button";
@@ -16,9 +16,16 @@ import type { AttendanceRecord, AttendanceSession, User } from "@/domain/entitie
 
 const LOGO_URL = "/branding/restart-logo.png";
 
-function toArgb(hex: string): string {
-  return `FF${hex.replace("#", "").toUpperCase()}`;
-}
+type SortField = "name" | "present" | "late" | "justified" | "absent";
+type SortDirection = "asc" | "desc";
+
+const SORT_OPTIONS: Array<{ value: SortField; label: string }> = [
+  { value: "name", label: "Nombre" },
+  { value: "present", label: "Asistencias" },
+  { value: "late", label: "Retardos" },
+  { value: "justified", label: "Justificaciones" },
+  { value: "absent", label: "Faltas" },
+];
 
 function slugify(value: string): string {
   return value
@@ -52,6 +59,29 @@ const TableActions = styled.div`
   flex-wrap: wrap;
   gap: ${(props) => props.theme.spacing.md};
   margin-bottom: ${(props) => props.theme.spacing.md};
+`;
+
+const SortControls = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: ${(props) => props.theme.spacing.sm};
+  margin-right: auto;
+`;
+
+const SortLabel = styled.label`
+  color: ${(props) => props.theme.colors.textSecondary};
+  font-size: ${(props) => props.theme.typography.fontSize.sm};
+`;
+
+const SortSelect = styled.select`
+  min-height: 38px;
+  padding: 0 ${(props) => props.theme.spacing.md};
+  border: 1px solid ${(props) => props.theme.colors.border};
+  border-radius: 8px;
+  background: ${(props) => props.theme.colors.surface};
+  color: ${(props) => props.theme.colors.textPrimary};
+  font: inherit;
 `;
 
 const TableScroll = styled.div`
@@ -206,7 +236,6 @@ export function AttendanceSummaryTable({
   cohortName,
   onLoadJustificationFile,
 }: AttendanceSummaryTableProps) {
-  const theme = useTheme();
   const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [previewSessionId, setPreviewSessionId] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<{ url: string; fileType: string } | null>(null);
@@ -214,21 +243,36 @@ export function AttendanceSummaryTable({
   const [previewError, setPreviewError] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const cohortSummary = computeCohortAttendanceSummary(participants, sessions, records);
+  const sortedParticipants = useMemo(() => {
+    const direction = sortDirection === "asc" ? 1 : -1;
+    return [...participants].sort((left, right) => {
+      const leftSummary = computeUserAttendanceSummary(left.id, sessions, records);
+      const rightSummary = computeUserAttendanceSummary(right.id, sessions, records);
+      const comparison =
+        sortField === "name"
+          ? left.fullName.localeCompare(right.fullName, "es-MX", { sensitivity: "base" })
+          : (sortField === "present" ? leftSummary.present :
+              sortField === "late" ? leftSummary.late :
+              sortField === "justified" ? leftSummary.justified : leftSummary.effectiveAbsent) -
+            (sortField === "present" ? rightSummary.present :
+              sortField === "late" ? rightSummary.late :
+              sortField === "justified" ? rightSummary.justified : rightSummary.effectiveAbsent);
+
+      return comparison === 0
+        ? left.fullName.localeCompare(right.fullName, "es-MX", { sensitivity: "base" })
+        : comparison * direction;
+    });
+  }, [participants, records, sessions, sortDirection, sortField]);
   const detailUser = participants.find((p) => p.id === detailUserId) ?? null;
   const previewDay = sessions.find((d) => d.id === previewSessionId) ?? null;
   const previewRecord =
     detailUser && previewSessionId
       ? records.find((r) => r.participantId === detailUser.id && r.sessionId === previewSessionId)
       : undefined;
-
-  const STATUS_COLOR: Record<string, string> = {
-    asistio: theme.colors.success,
-    retardo: theme.colors.warning,
-    falta: theme.colors.error,
-    justificado: theme.colors.accentPurple,
-  };
 
   async function handleExport() {
     setExportError(null);
@@ -246,16 +290,28 @@ export function AttendanceSummaryTable({
         views: [{ showGridLines: false }],
       });
 
-      const totalCols = 1 + sessions.length;
-      worksheet.columns = [{ width: 26 }, ...sessions.map(() => ({ width: 14 }))];
+      const totalCols = 2 + sessions.length;
+      worksheet.columns = [{ width: 7 }, { width: 34 }, ...sessions.map(() => ({ width: 18 }))];
+
+      const excelColors = {
+        black: "FF050505",
+        white: "FFF5F5F5",
+        red: "FFC3002F",
+        border: "FF5C5C5C",
+        green: "FF69BE28",
+        yellow: "FFFFD500",
+        absence: "FFFF0028",
+        purple: "FF9B35D5",
+        muted: "FFBDBDBD",
+      };
 
       const bandFill = {
         type: "pattern" as const,
         pattern: "solid" as const,
-        fgColor: { argb: toArgb(theme.colors.background) },
+        fgColor: { argb: excelColors.black },
       };
       const bandRow = worksheet.getRow(1);
-      bandRow.height = 46;
+      bandRow.height = 48;
       for (let col = 1; col <= totalCols; col++) {
         bandRow.getCell(col).fill = bandFill;
       }
@@ -263,56 +319,112 @@ export function AttendanceSummaryTable({
       const logoImageId = workbook.addImage({ buffer: logoBuffer, extension: "png" });
       worksheet.addImage(logoImageId, {
         tl: { col: 0.08, row: 0.12 },
-        ext: { width: 150, height: 39 },
+        ext: { width: 190, height: 42 },
       });
 
-      worksheet.getRow(2).height = 8;
+      if (totalCols > 3) worksheet.mergeCells(1, 3, 1, totalCols - 1);
+      const titleCell = worksheet.getCell(1, 3);
+      titleCell.value = {
+        richText: [
+          { text: "CONTROL DE ", font: { bold: true, size: 22, color: { argb: excelColors.white } } },
+          { text: "ASISTENCIA", font: { bold: true, size: 22, color: { argb: excelColors.absence } } },
+        ],
+      };
+      titleCell.alignment = { vertical: "middle", horizontal: "center" };
+
+      const firstDate = sessions.at(0)?.sessionDate;
+      const lastDate = sessions.at(-1)?.sessionDate;
+      if (totalCols > 3) {
+        const periodCell = worksheet.getCell(1, totalCols);
+        periodCell.value = firstDate && lastDate
+          ? `${new Date(`${firstDate}T12:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "short" })} al ${new Date(`${lastDate}T12:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}`
+          : "";
+        periodCell.font = { bold: true, size: 10, color: { argb: excelColors.white } };
+        periodCell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+      }
+
+      worksheet.getRow(2).height = 10;
 
       const headerRow = worksheet.getRow(3);
-      headerRow.values = ["Nombre", ...sessions.map((session) => formatSessionLabel(session.sessionDate))];
-      headerRow.height = 22;
+      headerRow.values = ["#", "NOMBRE", ...sessions.map((session) => formatSessionLabel(session.sessionDate))];
+      headerRow.height = 27;
       headerRow.eachCell((cell) => {
         cell.fill = {
           type: "pattern",
           pattern: "solid",
-          fgColor: { argb: toArgb(theme.colors.primary) },
+          fgColor: { argb: excelColors.red },
         };
-        cell.font = { bold: true, color: { argb: toArgb(theme.colors.background) } };
+        cell.font = { bold: true, color: { argb: excelColors.white }, size: 12 };
         cell.alignment = { vertical: "middle", horizontal: "center" };
         cell.border = {
-          top: { style: "thin", color: { argb: toArgb(theme.colors.border) } },
-          bottom: { style: "thin", color: { argb: toArgb(theme.colors.border) } },
+          top: { style: "thin", color: { argb: excelColors.border } },
+          bottom: { style: "thin", color: { argb: excelColors.border } },
+          left: { style: "thin", color: { argb: excelColors.border } },
+          right: { style: "thin", color: { argb: excelColors.border } },
         };
       });
-      headerRow.getCell(1).alignment = { vertical: "middle", horizontal: "left" };
+      headerRow.getCell(2).alignment = { vertical: "middle", horizontal: "left" };
 
-      participants.forEach((participant, index) => {
+      sortedParticipants.forEach((participant, index) => {
         const row = worksheet.getRow(4 + index);
+        row.height = 25;
 
-        const nameCell = row.getCell(1);
+        const numberCell = row.getCell(1);
+        numberCell.value = index + 1;
+        numberCell.font = { bold: true, color: { argb: excelColors.white } };
+        numberCell.alignment = { vertical: "middle", horizontal: "center" };
+
+        const nameCell = row.getCell(2);
         nameCell.value = participant.fullName;
-        nameCell.font = { bold: true, color: { argb: toArgb(theme.colors.background) } };
+        nameCell.font = { color: { argb: excelColors.white } };
         nameCell.alignment = { vertical: "middle", horizontal: "left" };
 
         sessions.forEach((session, dayIndex) => {
           const record = records.find(
             (r) => r.participantId === participant.id && r.sessionId === session.id
           );
-          const cell = row.getCell(2 + dayIndex);
+          const cell = row.getCell(3 + dayIndex);
           cell.value = record ? STATUS_BADGE[record.status].label : "Sin registro";
           cell.font = {
             bold: Boolean(record),
             color: {
-              argb: toArgb(record ? STATUS_COLOR[record.status] : theme.colors.border),
+              argb: record
+                ? ({ asistio: excelColors.green, retardo: excelColors.yellow, falta: excelColors.absence, justificado: excelColors.purple }[record.status])
+                : excelColors.muted,
             },
           };
           cell.alignment = { vertical: "middle", horizontal: "center" };
         });
 
         row.eachCell({ includeEmpty: true }, (cell) => {
-          cell.border = { bottom: { style: "thin", color: { argb: toArgb(theme.colors.border) } } };
+          cell.fill = bandFill;
+          cell.border = {
+            top: { style: "thin", color: { argb: excelColors.border } },
+            bottom: { style: "thin", color: { argb: excelColors.border } },
+            left: { style: "thin", color: { argb: excelColors.border } },
+            right: { style: "thin", color: { argb: excelColors.border } },
+          };
         });
       });
+
+      const legendRow = worksheet.getRow(5 + sortedParticipants.length);
+      legendRow.height = 26;
+      const legend = [
+        ["VERDE = ASISTENCIA", excelColors.green],
+        ["AMARILLO = RETARDO", excelColors.yellow],
+        ["ROJO = FALTA", excelColors.absence],
+        ["MORADO = JUSTIFICADO", excelColors.purple],
+      ];
+      legend.forEach(([label, color], index) => {
+        const startCol = 1 + index * Math.max(1, Math.floor(totalCols / 4));
+        const cell = legendRow.getCell(startCol);
+        cell.value = label;
+        cell.font = { bold: true, size: 10, color: { argb: excelColors.white } };
+        cell.fill = bandFill;
+        cell.alignment = { vertical: "middle", horizontal: "left" };
+        cell.border = { left: { style: "thick", color: { argb: color } } };
+      });
+      worksheet.views = [{ showGridLines: false, state: "frozen", ySplit: 3, xSplit: 2 }];
 
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
@@ -346,6 +458,15 @@ export function AttendanceSummaryTable({
   return (
     <>
       <TableActions>
+        <SortControls>
+          <SortLabel htmlFor="attendance-sort">Ordenar por</SortLabel>
+          <SortSelect id="attendance-sort" value={sortField} onChange={(event) => setSortField(event.target.value as SortField)}>
+            {SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </SortSelect>
+          <Button variant="secondary" onClick={() => setSortDirection((direction) => direction === "asc" ? "desc" : "asc")}>
+            {sortDirection === "asc" ? "Ascendente" : "Descendente"}
+          </Button>
+        </SortControls>
         {exportError && <FormStatusMessage variant="error">{exportError}</FormStatusMessage>}
         <Button variant="secondary" onClick={handleExport} disabled={participants.length === 0 || isExporting}>
           {isExporting ? "Generando…" : "Exportar a Excel"}
@@ -378,7 +499,7 @@ export function AttendanceSummaryTable({
             </Tr>
           </Thead>
           <Tbody>
-            {participants.map((participant) => {
+            {sortedParticipants.map((participant) => {
               const summary = computeUserAttendanceSummary(participant.id, sessions, records);
               return (
                 <Tr key={participant.id}>

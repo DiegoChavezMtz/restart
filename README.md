@@ -7,7 +7,7 @@ Sistema interno de Dekids para crear y asignar formularios de evaluación, respo
 - Node.js 22 o superior
 - Un proyecto de Supabase
 - Variables de `.env.local.example` configuradas en `.env.local`
-- Scripts de `supabase/sql/001_extensions.sql` a `013_auth_hardening.sql` aplicados en orden
+- Scripts de `supabase/sql/001_extensions.sql` a `023_appointment_scheduling_jobs.sql` aplicados en orden
 
 La configuración detallada de Supabase está en `docs/SUPABASE_SETUP.md`.
 

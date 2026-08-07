@@ -80,7 +80,7 @@ export function CountdownTimer({ totalSeconds, onExpire }: CountdownTimerProps) 
   }, [isWarning]);
 
   return (
-    <Wrapper>
+    <Wrapper role="timer" aria-live="polite">
       <TimeLabel $warning={isWarning}>Tiempo restante: {formatTime(Math.max(remaining, 0))}</TimeLabel>
       <motion.div
         animate={isWarning && !reducedMotion ? { scale: [1, 1.03, 1] } : { scale: 1 }}

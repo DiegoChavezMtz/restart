@@ -6,6 +6,7 @@ interface UserRow {
   full_name: string;
   role: string;
   cohort_id: string | null;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -16,6 +17,7 @@ export function toDomainUser(row: UserRow): User {
     fullName: row.full_name,
     role: row.role as UserRole,
     cohortId: row.cohort_id,
+    isActive: row.is_active,
     createdAt: row.created_at,
   };
 }

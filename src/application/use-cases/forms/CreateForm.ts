@@ -6,7 +6,7 @@ export function createForm(
   repo: FormRepository,
   input: { title: string; description: string | null; requestedBy: User; adminAccessToken: string }
 ): Promise<Form> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
 
   const title = input.title.trim();
   if (title.length === 0 || title.length > 200) {

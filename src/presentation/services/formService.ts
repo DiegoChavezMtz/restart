@@ -59,6 +59,14 @@ export async function setFormStatus(
   return data;
 }
 
+export async function setFormArchived(formId: string, archived: boolean): Promise<Form> {
+  const { data } = await axiosClient.patch<Form>(
+    `/forms/${encodeURIComponent(formId)}/archive`,
+    { archived }
+  );
+  return data;
+}
+
 export async function setAcceptingResponses(
   formId: string,
   acceptingResponses: boolean

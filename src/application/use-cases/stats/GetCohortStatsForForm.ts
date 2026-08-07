@@ -40,7 +40,7 @@ export async function getCohortStatsForForm(
   cohortRepo: CohortRepository,
   input: { cohortId: string; formId: string; requestedBy: User; adminAccessToken: string }
 ): Promise<GetCohortStatsForFormResult> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
 
   const [cohort, form] = await Promise.all([
     cohortRepo.getCohortById(input.cohortId, input.adminAccessToken),
@@ -56,10 +56,15 @@ export async function getCohortStatsForForm(
     statsRepo.listAnswersByForm(input.formId, input.adminAccessToken),
   ]);
 
-  const participantIds = new Set(participants.map((p) => p.id));
+  // Las cuentas administrativas pueden pertenecer a una cohorte para fines de
+  // gestión, pero sus respuestas no representan a la generación evaluada.
+  // Filtrar aquí (antes de todos los cálculos) mantiene consistentes tanto los
+  // totales como los porcentajes y los desgloses de cada pregunta.
+  const eligibleParticipants = participants.filter((participant) => participant.role === "usuario");
+  const participantIds = new Set(eligibleParticipants.map((p) => p.id));
   const cohortResponses = responses.filter((r) => participantIds.has(r.participantId));
   const completedCount = cohortResponses.filter((r) => r.status === "completed").length;
-  const totalParticipants = participants.length;
+  const totalParticipants = eligibleParticipants.length;
   const completionRate =
     totalParticipants > 0 ? Math.round((completedCount / totalParticipants) * 100) : 0;
 

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import styled, { css } from "styled-components";
 import { Select } from "@/presentation/atoms/Select";
+import { LoadingState } from "@/presentation/molecules/AsyncState";
 import { FormField } from "@/presentation/molecules/FormField";
 import { FormStatusMessage } from "@/presentation/molecules/FormStatusMessage";
 import { AttendanceRollCall } from "@/presentation/organisms/AttendanceRollCall";
@@ -34,12 +35,17 @@ const SectionTitle = styled.h2`
 const SelectorRow = styled.div`
   display: flex;
   gap: ${(props) => props.theme.spacing.md};
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+  }
 `;
 
 const SectionTabs = styled.div`
   display: flex;
   gap: ${(props) => props.theme.spacing.sm};
   margin-bottom: ${(props) => props.theme.spacing.lg};
+  overflow-x: auto;
 `;
 
 const SectionTab = styled.button<{ $active: boolean }>`
@@ -79,6 +85,8 @@ export default function AdminAttendancePage() {
   const [sessions, setSessions] = useState<AttendanceSession[]>([]);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [section, setSection] = useState<AttendanceSection>("rollcall");
+  const [isLoadingCohorts, setIsLoadingCohorts] = useState(true);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isJustifying, setIsJustifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,7 +94,8 @@ export default function AdminAttendancePage() {
     cohortService
       .listCohorts()
       .then(setCohorts)
-      .catch(() => setError("No se pudieron cargar las generaciones."));
+      .catch(() => setError("No se pudieron cargar las cohortes."))
+      .finally(() => setIsLoadingCohorts(false));
   }, []);
 
   useEffect(() => {
@@ -97,11 +106,12 @@ export default function AdminAttendancePage() {
       attendanceService.listRecords(cohortId),
     ])
       .then(([detail, sessionList, recordList]) => {
-        setParticipants(detail.participants.filter((participant) => participant.role !== "admin"));
+        setParticipants(detail.participants.filter((participant) => participant.role === "usuario"));
         setSessions(sessionList);
         setRecords(recordList);
       })
-      .catch(() => setError("No se pudo cargar la generación seleccionada."));
+      .catch(() => setError("No se pudo cargar la cohorte seleccionada."))
+      .finally(() => setIsLoadingDetail(false));
   }, [cohortId]);
 
   const recordsByParticipant = useMemo(() => {
@@ -113,6 +123,7 @@ export default function AdminAttendancePage() {
   }, [records]);
 
   function handleCohortChange(value: string) {
+    setIsLoadingDetail(Boolean(value));
     setCohortId(value);
     setParticipants([]);
     setSessions([]);
@@ -172,9 +183,9 @@ export default function AdminAttendancePage() {
       <Section>
         <SectionTitle>Asistencia</SectionTitle>
         <SelectorRow>
-          <FormField label="Generación">
-            <Select value={cohortId} onChange={(e) => handleCohortChange(e.target.value)}>
-              <option value="">Selecciona una generación…</option>
+          <FormField label="Cohorte" htmlFor="attendance-cohort">
+            <Select id="attendance-cohort" value={cohortId} onChange={(e) => handleCohortChange(e.target.value)} disabled={isLoadingCohorts}>
+              <option value="">Selecciona una cohorte…</option>
               {cohorts.map((cohort) => (
                 <option key={cohort.id} value={cohort.id}>
                   {cohort.name}
@@ -185,19 +196,22 @@ export default function AdminAttendancePage() {
         </SelectorRow>
 
         {error && <FormStatusMessage variant="error">{error}</FormStatusMessage>}
+        {isLoadingCohorts && <LoadingState label="Cargando cohortes…" />}
       </Section>
 
+      {isLoadingDetail && <LoadingState label="Cargando asistencia…" />}
       {cohortId && sessions.length > 0 && (
         <Section $topGap>
-          <SectionTabs>
-            <SectionTab type="button" $active={section === "rollcall"} onClick={() => setSection("rollcall")}>
+          <SectionTabs role="tablist" aria-label="Vistas de asistencia">
+            <SectionTab type="button" role="tab" id="attendance-tab-rollcall" aria-controls="attendance-panel-rollcall" aria-selected={section === "rollcall"} $active={section === "rollcall"} onClick={() => setSection("rollcall")}>
               Pase de lista
             </SectionTab>
-            <SectionTab type="button" $active={section === "summary"} onClick={() => setSection("summary")}>
+            <SectionTab type="button" role="tab" id="attendance-tab-summary" aria-controls="attendance-panel-summary" aria-selected={section === "summary"} $active={section === "summary"} onClick={() => setSection("summary")}>
               Concentrado
             </SectionTab>
           </SectionTabs>
 
+          <div role="tabpanel" id={`attendance-panel-${section}`} aria-labelledby={`attendance-tab-${section}`}>
           {section === "rollcall" ? (
             <AttendanceRollCall
               participants={participants}
@@ -217,6 +231,7 @@ export default function AdminAttendancePage() {
               onLoadJustificationFile={attendanceService.getJustificationFileUrl}
             />
           )}
+          </div>
         </Section>
       )}
     </>

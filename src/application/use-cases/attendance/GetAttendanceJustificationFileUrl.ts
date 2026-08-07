@@ -11,7 +11,7 @@ export function getAttendanceJustificationFileUrl(
     adminAccessToken: string;
   }
 ): Promise<{ url: string; fileType: string } | null> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
   return repo.getJustificationFileUrl(
     input.sessionId,
     input.participantId,

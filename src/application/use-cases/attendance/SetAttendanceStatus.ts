@@ -19,7 +19,7 @@ export function setAttendanceStatus(
     adminAccessToken: string;
   }
 ): Promise<AttendanceRecord> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
   if (!isPlainStatus(input.status)) {
     throw new InvalidAttendanceInputError(
       'status must be one of "asistio", "retardo", "falta" — use the justify endpoint for "justificado".'

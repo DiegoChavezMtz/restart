@@ -46,7 +46,8 @@ export interface AuthRepository {
   generateInvitation(
     cohortId: string,
     createdBy: string,
-    adminAccessToken: string
+    adminAccessToken: string,
+    intendedRole?: "usuario" | "test"
   ): Promise<Invitation>;
   deactivateInvitation(invitationId: string, adminAccessToken: string): Promise<void>;
   listInvitationsByCohort(cohortId: string, adminAccessToken: string): Promise<Invitation[]>;
@@ -212,27 +213,15 @@ export interface ResponseRepository {
   listVisibleForms(accessToken: string): Promise<Form[]>;
   listResponsesForParticipant(accessToken: string): Promise<FormResponse[]>;
   getResponse(formId: string, participantId: string, accessToken: string): Promise<FormResponse | null>;
-  createResponse(
-    formId: string,
-    participantId: string,
-    firstQuestionId: string | null,
-    accessToken: string
-  ): Promise<FormResponse>;
-  deleteResponse(responseId: string, accessToken: string): Promise<void>;
+  resumeParticipantResponse(formId: string, accessToken: string): Promise<FormResponse>;
   listAnswersByResponse(responseId: string, accessToken: string): Promise<Answer[]>;
-  addAnswer(
+  submitParticipantAnswerAndAdvance(
     responseId: string,
     questionId: string,
     value: AnswerValue | null,
     autoSubmittedByTimeout: boolean,
     accessToken: string
-  ): Promise<Answer>;
-  advanceResponse(
-    responseId: string,
-    nextQuestionId: string | null,
-    accessToken: string
-  ): Promise<FormResponse>;
-  completeResponse(responseId: string, accessToken: string): Promise<FormResponse>;
+  ): Promise<string | null>;
 }
 
 export interface StatsRepository {

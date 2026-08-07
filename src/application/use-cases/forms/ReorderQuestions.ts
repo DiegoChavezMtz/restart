@@ -12,7 +12,7 @@ export async function reorderQuestions(
     adminAccessToken: string;
   }
 ): Promise<Question[]> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
 
   const form = await repo.getFormById(input.formId, input.adminAccessToken);
   if (!form) throw new FormNotFoundError();

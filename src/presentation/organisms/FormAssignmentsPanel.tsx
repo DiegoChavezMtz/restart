@@ -8,15 +8,23 @@ import { Select } from "@/presentation/atoms/Select";
 import type { Cohort, FormAssignment, FormAssignmentTargetType, User } from "@/domain/entities";
 
 const Columns = styled.div`
-  display: flex;
-  gap: ${(props) => props.theme.spacing.xl};
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: ${(props) => props.theme.spacing.lg};
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const Column = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${(props) => props.theme.spacing.sm};
-  flex: 1;
+  padding: ${(props) => props.theme.spacing.md};
+  border: 1px solid ${(props) => props.theme.colors.border};
+  border-radius: 12px;
+  background: ${(props) => props.theme.colors.background};
 `;
 
 const ColumnTitle = styled.h3`
@@ -28,7 +36,20 @@ const Row = styled.label`
   display: flex;
   align-items: center;
   gap: ${(props) => props.theme.spacing.sm};
+  min-height: 36px;
+  padding: ${(props) => props.theme.spacing.xs};
+  border-radius: 6px;
   color: ${(props) => props.theme.colors.textPrimary};
+  cursor: pointer;
+
+  &:hover {
+    background: ${(props) => props.theme.colors.surfaceHover};
+  }
+`;
+
+const HelperText = styled.p`
+  color: ${(props) => props.theme.colors.textSecondary};
+  font-size: ${(props) => props.theme.typography.fontSize.sm};
 `;
 
 interface Target {
@@ -83,6 +104,8 @@ export function FormAssignmentsPanel({
       <Columns>
         <Column>
           <ColumnTitle>Cohortes completas</ColumnTitle>
+          <HelperText>Todos los participantes actuales y futuros de la cohorte.</HelperText>
+          {cohorts.length === 0 && <HelperText>No hay cohortes disponibles.</HelperText>}
           {cohorts.map((cohort) => (
             <Row key={cohort.id}>
               <Checkbox
@@ -96,6 +119,7 @@ export function FormAssignmentsPanel({
 
         <Column>
           <ColumnTitle>Usuarios específicos</ColumnTitle>
+          <HelperText>Selecciona una cohorte para encontrar participantes individuales.</HelperText>
           <Select value={browsedCohortId} onChange={(e) => onBrowseCohortChange(e.target.value)}>
             <option value="">Explorar cohorte…</option>
             {cohorts.map((cohort) => (
@@ -104,6 +128,7 @@ export function FormAssignmentsPanel({
               </option>
             ))}
           </Select>
+          {browsedCohortId && browsedParticipants.length === 0 && <HelperText>Esta cohorte no tiene participantes todavía.</HelperText>}
           {browsedParticipants.map((user) => (
             <Row key={user.id}>
               <Checkbox

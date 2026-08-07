@@ -24,7 +24,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
     const repo = new SupabaseAuthRepository();
     const { user, accessToken } = await requireUser(request, repo);
     // Defense in depth on top of RLS (invitations_admin_all), same pattern as GenerateInvitationLink.
-    if (user.role !== "admin") throw new ForbiddenError();
+    if (user.role !== "admin" && user.role !== "super_admin") throw new ForbiddenError();
 
     const invitation = await repo.getInvitationByToken(token);
     if (!invitation) throw new InvitationNotFoundError();

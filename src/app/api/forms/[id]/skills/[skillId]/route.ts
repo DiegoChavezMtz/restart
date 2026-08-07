@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { handleRouteError } from "@/app/api/_lib/handleRouteError";
+import { readJsonObject } from "@/app/api/_lib/readJsonBody";
+import { optionalString, requiredString } from "@/app/api/_lib/formRequestValidation";
 import { requireUser } from "@/app/api/_lib/requireUser";
 import { deleteFormSkill } from "@/application/use-cases/forms/DeleteFormSkill";
 import { updateFormSkill } from "@/application/use-cases/forms/UpdateFormSkill";
@@ -13,7 +15,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
     const { id, skillId } = await params;
     const authRepo = new SupabaseAuthRepository();
     const { user, accessToken } = await requireUser(request, authRepo);
-    const { name, description, icon, color } = await request.json();
+    const body = await readJsonObject(request);
+    const name = body.name === undefined ? undefined : requiredString(body, "name");
+    const description = optionalString(body, "description");
+    const icon = optionalString(body, "icon");
+    const color = optionalString(body, "color");
 
     const formRepo = new SupabaseFormRepository();
     const skill = await updateFormSkill(formRepo, {

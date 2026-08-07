@@ -29,12 +29,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const repo = new SupabaseAuthRepository();
     const { user, accessToken } = await requireUser(request, repo);
-    const { cohortId } = await request.json();
+    const { cohortId, intendedRole } = await request.json();
+    if (intendedRole !== undefined && intendedRole !== "usuario" && intendedRole !== "test") {
+      throw new UseCaseError("Rol de invitación inválido", 400);
+    }
 
     const invitation = await generateInvitationLink(repo, {
       cohortId,
       requestedBy: user,
       adminAccessToken: accessToken,
+      intendedRole,
     });
 
     return NextResponse.json(invitation);

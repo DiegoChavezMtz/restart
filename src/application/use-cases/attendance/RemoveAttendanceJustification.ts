@@ -13,7 +13,7 @@ export async function removeAttendanceJustification(
     adminAccessToken: string;
   }
 ): Promise<AttendanceRecord> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
 
   const existing = await repo.getRecord(
     input.sessionId,

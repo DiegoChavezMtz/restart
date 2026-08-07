@@ -6,6 +6,6 @@ export function listForms(
   repo: FormRepository,
   input: { requestedBy: User; adminAccessToken: string }
 ): Promise<Form[]> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
   return repo.listForms(input.adminAccessToken);
 }

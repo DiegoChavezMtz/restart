@@ -4,7 +4,7 @@ import { getRoleHome, getSafeNextPath } from "../../src/presentation/services/au
 
 test("dirige cada rol a su área", () => {
   assert.equal(getRoleHome("admin"), "/admin");
-  assert.equal(getRoleHome("participant"), "/respond");
+  assert.equal(getRoleHome("usuario"), "/respond");
 });
 
 test("acepta únicamente destinos internos", () => {

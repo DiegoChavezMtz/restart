@@ -6,7 +6,7 @@ export function createCohort(
   repo: CohortRepository,
   input: CreateCohortInput & { requestedBy: User; adminAccessToken: string }
 ): Promise<Cohort> {
-  if (input.requestedBy.role !== "admin") throw new ForbiddenError();
+  if (input.requestedBy.role !== "admin" && input.requestedBy.role !== "super_admin") throw new ForbiddenError();
   return repo.createCohort(
     { name: input.name, description: input.description },
     input.adminAccessToken

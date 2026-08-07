@@ -1,7 +1,9 @@
 import type { UserRole } from "@/domain/entities";
 
 export function getRoleHome(role: UserRole): string {
-  return role === "admin" ? "/admin" : "/respond";
+  if (role === "super_admin" || role === "admin") return "/admin";
+  if (role === "psicologa") return "/psychology";
+  return "/respond";
 }
 
 export function getSafeNextPath(value: string | null): string | null {

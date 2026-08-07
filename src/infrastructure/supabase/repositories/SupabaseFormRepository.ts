@@ -156,26 +156,14 @@ export class SupabaseFormRepository implements FormRepository {
 
   async addQuestion(input: CreateQuestionInput, adminAccessToken: string): Promise<Question> {
     const client = createServerSupabaseClient(adminAccessToken);
-
-    const { count, error: countError } = await client
-      .from("questions")
-      .select("*", { count: "exact", head: true })
-      .eq("form_id", input.formId);
-    if (countError) throw new UseCaseError(countError.message, 500);
-
-    const { data: row, error } = await client
-      .from("questions")
-      .insert({
-        form_id: input.formId,
-        order: count ?? 0,
-        label: input.label,
-        type: input.type,
-        config: input.config,
-        required: input.required,
-        time_limit_seconds: input.timeLimitSeconds,
-      })
-      .select("*")
-      .single();
+    const { data: row, error } = await client.rpc("append_question", {
+      p_form_id: input.formId,
+      p_label: input.label,
+      p_type: input.type,
+      p_config: input.config,
+      p_required: input.required,
+      p_time_limit_seconds: input.timeLimitSeconds,
+    });
     if (error || !row) throw new UseCaseError(error?.message ?? "Failed to add question", 500);
     return toDomainQuestion(row);
   }
@@ -418,10 +406,22 @@ export class SupabaseFormRepository implements FormRepository {
     adminAccessToken: string
   ): Promise<QuestionOptionBranch[]> {
     const client = createServerSupabaseClient(adminAccessToken);
+    // Filtrar una relación embebida (`questions.form_id`) no restringe de forma
+    // fiable las filas principales en PostgREST. Primero resolvemos las
+    // preguntas del formulario y después consultamos explícitamente sus IDs.
+    const { data: questionRows, error: questionError } = await client
+      .from("questions")
+      .select("id")
+      .eq("form_id", formId);
+    if (questionError) throw new UseCaseError(questionError.message, 500);
+
+    const questionIds = (questionRows ?? []).map((question) => question.id);
+    if (questionIds.length === 0) return [];
+
     const { data, error } = await client
       .from("question_option_branches")
-      .select("*, questions!question_id(form_id)")
-      .eq("questions.form_id", formId);
+      .select("*")
+      .in("question_id", questionIds);
     if (error) throw new UseCaseError(error.message, 500);
     return (data ?? []).map(toDomainQuestionOptionBranch);
   }

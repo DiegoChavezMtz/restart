@@ -170,3 +170,9 @@ export class AttendanceRecordNotFoundError extends UseCaseError {
     super("Attendance record not found", 404);
   }
 }
+
+export class NoParticipantsFoundError extends UseCaseError {
+  constructor() {
+    super("This cohort has no eligible participants", 404);
+  }
+}

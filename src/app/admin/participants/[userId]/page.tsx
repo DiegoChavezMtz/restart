@@ -5,8 +5,8 @@ import { useParams } from "next/navigation";
 import styled from "styled-components";
 import { Badge } from "@/presentation/atoms/Badge";
 import { Button } from "@/presentation/atoms/Button";
-import { Table, Tbody, Td, Th, Thead, Tr } from "@/presentation/atoms/Table";
-import { FormStatusMessage } from "@/presentation/molecules/FormStatusMessage";
+import { Table, TableScroll, Tbody, Td, Th, Thead, Tr } from "@/presentation/atoms/Table";
+import { EmptyState, LoadingState } from "@/presentation/molecules/AsyncState";
 import { ParticipantSkillRadar } from "@/presentation/organisms/ParticipantSkillRadar";
 import * as statsService from "@/presentation/services/statsService";
 import type { GetParticipantHistoryResult } from "@/presentation/services/statsService";
@@ -66,10 +66,10 @@ export default function ParticipantHistoryPage() {
       .catch(() => setLoadState("error"));
   }, [userId]);
 
-  if (loadState === "loading") return null;
+  if (loadState === "loading") return <LoadingState label="Cargando historial…" />;
 
   if (loadState === "error" || !result) {
-    return <FormStatusMessage variant="error">No se pudo cargar el historial.</FormStatusMessage>;
+    return <EmptyState title="No fue posible cargar el historial" description="Actualiza la página para volver a intentarlo." />;
   }
 
   return (
@@ -81,6 +81,10 @@ export default function ParticipantHistoryPage() {
 
       <Section>
         <SectionTitle>Historial de formularios</SectionTitle>
+        {result.history.length === 0 ? (
+          <EmptyState title="Aún no hay formularios en el historial" description="Las respuestas del participante aparecerán aquí cuando comience un formulario." />
+        ) : (
+        <TableScroll>
         <Table>
           <Thead>
             <Tr>
@@ -120,6 +124,8 @@ export default function ParticipantHistoryPage() {
             ))}
           </Tbody>
         </Table>
+        </TableScroll>
+        )}
       </Section>
 
       {result.history

@@ -5,9 +5,12 @@ export const rawColors = {
     bg: "#0A0A10",
     surface: "#14141C",
     surfaceElevated: "#1A1A24",
+    surfaceHover: "#22222D",
     border: "#2A2A35",
+    borderStrong: "#41414F",
     textPrimary: "#F5F5F7",
     textSecondary: "#9A9AA5",
+    textTertiary: "#6D6D78",
   },
   brand: {
     coral: "#E8384F",
@@ -20,5 +23,7 @@ export const rawColors = {
   feedback: {
     success: "#4ADE80",
     warning: "#F59E0B",
+    info: "#3EC6F0",
+    danger: "#FB7185",
   },
 } as const;

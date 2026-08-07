@@ -7,12 +7,14 @@ export interface SelectProps {
 }
 
 export const Select = styled.select<SelectProps>`
+  width: 100%;
+  min-height: 44px;
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
   padding: ${(props) => props.theme.spacing.sm};
   padding-right: ${(props) => props.theme.spacing.xl};
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid
     ${(props) => (props.hasError ? props.theme.colors.error : props.theme.colors.border)};
   font-size: ${(props) => props.theme.typography.fontSize.md};
@@ -32,9 +34,10 @@ export const Select = styled.select<SelectProps>`
     border-color: ${(props) => (props.hasError ? props.theme.colors.error : props.theme.colors.primary)};
   }
 
-  &:focus {
-    outline: 2px solid ${(props) => props.theme.colors.primary};
-    outline-offset: 1px;
+  &:focus-visible {
+    outline: none;
+    border-color: ${(props) => props.theme.colors.focus};
+    box-shadow: 0 0 0 3px color-mix(in srgb, ${(props) => props.theme.colors.focus} 24%, transparent);
   }
 
   &:disabled {

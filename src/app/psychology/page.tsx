@@ -1,0 +1,28 @@
+"use client";
+
+import { useEffect, useState, type FormEvent } from "react";
+import styled from "styled-components";
+import { Button } from "@/presentation/atoms/Button";
+import { Input } from "@/presentation/atoms/Input";
+import { Select } from "@/presentation/atoms/Select";
+import { EmptyState, LoadingState } from "@/presentation/molecules/AsyncState";
+import { FormStatusMessage } from "@/presentation/molecules/FormStatusMessage";
+import * as psychology from "@/presentation/services/psychologyService";
+import * as appointments from "@/presentation/services/appointmentService";
+import type { Appointment, AppointmentFormTemplate } from "@/domain/entities";
+
+const Page = styled.main`max-width:1000px;margin:0 auto;padding:${(p) => p.theme.spacing.xxl};display:flex;flex-direction:column;gap:${(p) => p.theme.spacing.xl};`;
+const Card = styled.article`padding:${(p) => p.theme.spacing.lg};border:1px solid ${(p) => p.theme.colors.border};border-radius:14px;background:${(p) => p.theme.colors.surface};display:flex;justify-content:space-between;gap:${(p) => p.theme.spacing.md};`;
+const Title = styled.h1`color:${(p) => p.theme.colors.textPrimary};font-size:${(p) => p.theme.typography.fontSize.xl};`;
+const Meta = styled.p`color:${(p) => p.theme.colors.textSecondary};`;
+const Detail = styled.pre`white-space:pre-wrap;overflow:auto;padding:${(p) => p.theme.spacing.lg};border-radius:12px;background:${(p) => p.theme.colors.surfaceElevated};color:${(p) => p.theme.colors.textPrimary};`;
+
+export default function PsychologyPage() {
+  const [cases, setCases] = useState<psychology.PsychologicalCaseSummary[]>([]); const [agenda, setAgenda] = useState<Appointment[]>([]); const [templates, setTemplates] = useState<AppointmentFormTemplate[]>([]); const [detail, setDetail] = useState<Record<string, unknown> | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null); const [templateTitle, setTemplateTitle] = useState(""); const [templateBusy, setTemplateBusy] = useState(false); const [selectedTemplateId, setSelectedTemplateId] = useState(""); const [questionLabel, setQuestionLabel] = useState("");
+  useEffect(() => { Promise.all([psychology.listCases(), appointments.getAdminCalendar(), appointments.listAppointmentFormTemplates()]).then(([items, calendar, forms]) => { setCases(items); setAgenda(calendar.appointments); setTemplates(forms); }).catch(() => setError("No fue posible cargar los casos o la agenda asignada.")).finally(() => setLoading(false)); }, []);
+  async function openCase(id: string) { try { setError(null); setDetail(await psychology.readCase(id)); } catch { setError("No tienes acceso al expediente o no pudo abrirse."); } }
+  async function createTemplate(event: FormEvent) { event.preventDefault(); if (!templateTitle.trim()) return; setTemplateBusy(true); try { const created = await appointments.createAppointmentFormTemplate({ title: templateTitle.trim(), isPsychological: true }); setTemplates((current) => [created, ...current]); setSelectedTemplateId(created.id); setTemplateTitle(""); } catch { setError("No se pudo crear el formulario interno psicológico."); } finally { setTemplateBusy(false); } }
+  async function addQuestion(event: FormEvent) { event.preventDefault(); if (!selectedTemplateId || !questionLabel.trim()) return; setTemplateBusy(true); try { await psychology.addOpenTextQuestion(selectedTemplateId, questionLabel.trim()); setQuestionLabel(""); } catch { setError("No se pudo agregar la pregunta clínica."); } finally { setTemplateBusy(false); } }
+  if (loading) return <LoadingState label="Cargando casos asignados…" />;
+  return <Page><div><Title>Área clínica</Title><Meta>Los accesos a expedientes sensibles quedan auditados.</Meta></div>{error && <FormStatusMessage variant="error">{error}</FormStatusMessage>}<section><h2>Mi agenda</h2>{agenda.length === 0 ? <Meta>No hay citas asignadas.</Meta> : agenda.map((item) => <Card key={item.id}><div><strong>{item.appointmentTypeLabel}</strong><Meta>{new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short" }).format(new Date(item.startsAt))} · {item.participantName}</Meta></div><Meta>{item.status}</Meta></Card>)}</section><section><h2>Casos asignados</h2>{cases.length === 0 ? <EmptyState title="No hay casos asignados" description="Los casos aparecerán aquí cuando una persona administradora te asigne." /> : cases.map((item) => <Card key={item.id}><div><strong>{item.title}</strong><Meta>{item.participant_name} · {item.status === "open" ? "Abierto" : "Cerrado"}</Meta></div><Button variant="secondary" onClick={() => openCase(item.id)}>Abrir expediente</Button></Card>)}</section><section><h2>Formulario interno psicológico</h2><Meta>La plantilla queda fuera del flujo de participantes.</Meta><form onSubmit={createTemplate}><Input value={templateTitle} onChange={(event) => setTemplateTitle(event.target.value)} placeholder="Nombre de la plantilla" /><Button type="submit" disabled={templateBusy}>{templateBusy ? "Creando…" : "Crear plantilla"}</Button></form><form onSubmit={addQuestion}><Select value={selectedTemplateId} onChange={(event) => setSelectedTemplateId(event.target.value)}><option value="">Seleccionar plantilla…</option>{templates.map((template) => <option key={template.id} value={template.id}>{template.title}</option>)}</Select><Input value={questionLabel} onChange={(event) => setQuestionLabel(event.target.value)} placeholder="Pregunta abierta" /><Button type="submit" variant="secondary" disabled={templateBusy || !selectedTemplateId}>Agregar pregunta</Button></form></section>{detail && <Detail>{JSON.stringify(detail, null, 2)}</Detail>}</Page>;
+}
