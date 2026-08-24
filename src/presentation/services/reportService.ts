@@ -5,7 +5,7 @@ export async function downloadReportPdf(cohortId: string, formId: string): Promi
     params: { cohortId, formId },
     responseType: "blob",
   });
-
+ 
   const url = URL.createObjectURL(response.data as Blob);
   const anchor = document.createElement("a");
   anchor.href = url;

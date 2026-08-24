@@ -3,7 +3,6 @@ import { handleRouteError } from "@/app/api/_lib/handleRouteError";
 import { requireUser } from "@/app/api/_lib/requireUser";
 import { UseCaseError } from "@/application/errors";
 import { getReportDataForCohortForm } from "@/application/use-cases/reports/GetReportDataForCohortForm";
-import { getIndividualReportInterpretationPlan } from "@/application/use-cases/reports/GetIndividualReportInterpretation";
 import { generateGlobalInterpretation, generateIndividualInterpretation } from "@/infrastructure/llm/LlmInterpreter";
 import { buildReportPdf } from "@/infrastructure/pdf/buildReportPdf";
 import { SupabaseAuthRepository } from "@/infrastructure/supabase/auth/SupabaseAuthRepository";
@@ -12,8 +11,7 @@ import { SupabaseFormRepository } from "@/infrastructure/supabase/repositories/S
 import { SupabaseStatsRepository } from "@/infrastructure/supabase/repositories/SupabaseStatsRepository";
 
 export const runtime = "nodejs";
-// Las interpretaciones se ejecutan en serie para no saturar al proveedor LLM.
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
@@ -36,24 +34,26 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       adminAccessToken: accessToken,
     });
 
-    const globalInterpretation = await generateGlobalInterpretation({
-      cohortName: data.cohort.name,
-      formTitle: data.form.title,
-      totalParticipants: data.totalParticipants,
-      completionRate: data.completionRate,
-      breakdown: data.breakdown,
-    });
-
-    const individualInterpretations = new Map<string, string>();
-    for (const entry of data.participants) {
-      const plan = getIndividualReportInterpretationPlan(entry);
-      const interpretation = plan.fallbackInterpretation ?? await generateIndividualInterpretation({
-        participantName: entry.participant.fullName,
+    const [globalInterpretation, individualEntries] = await Promise.all([
+      generateGlobalInterpretation({
+        cohortName: data.cohort.name,
         formTitle: data.form.title,
-        answers: plan.answers,
-      });
-      individualInterpretations.set(entry.participant.id, interpretation);
-    }
+        totalParticipants: data.totalParticipants,
+        completionRate: data.completionRate,
+        breakdown: data.breakdown,
+      }),
+      Promise.all(
+        data.participants.map(async (entry) => {
+          const interpretation = await generateIndividualInterpretation({
+            participantName: entry.participant.fullName,
+            formTitle: data.form.title,
+            answers: entry.answers,
+          });
+          return [entry.participant.id, interpretation] as const;
+        })
+      ),
+    ]);
+    const individualInterpretations = new Map(individualEntries);
 
     const pdfBuffer = await buildReportPdf({ data, globalInterpretation, individualInterpretations });
 

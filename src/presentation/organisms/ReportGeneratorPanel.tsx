@@ -43,7 +43,7 @@ export function ReportGeneratorPanel({ cohortId, formId }: ReportGeneratorPanelP
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleGenerate() {
+  async function handleGenerate() { 
     setIsGenerating(true);
     setError(null);
     try {

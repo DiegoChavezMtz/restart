@@ -75,17 +75,36 @@ export default function AdminReportsPage() {
       <Card>
         <SectionTitle>Selecciona qué quieres reportar</SectionTitle>
         {loadState === "loading" && <LoadingState label="Cargando opciones…" />}
-        {loadState === "error" && <EmptyState title="No fue posible preparar los reportes" description="Actualiza la página para volver a intentarlo." />}
+        {loadState === "error" && 
+          <EmptyState title="No fue posible preparar los reportes" description="Actualiza la página para volver a intentarlo." />}
         {loadState === "loaded" && (
           <Selectors>
-            <FormField label="Cohorte" htmlFor="reports-cohort"><Select id="reports-cohort" value={cohortId} onChange={(e) => { setError(null); setCohortId(e.target.value); }}><option value="">Selecciona una cohorte…</option>{cohorts.map((cohort) => <option key={cohort.id} value={cohort.id}>{cohort.name}</option>)}</Select></FormField>
-            <FormField label="Formulario" htmlFor="reports-form"><Select id="reports-form" value={formId} onChange={(e) => { setError(null); setFormId(e.target.value); }}><option value="">Selecciona un formulario…</option>{forms.map((form) => <option key={form.id} value={form.id}>{form.title}</option>)}</Select></FormField>
+            <FormField label="Cohorte" htmlFor="reports-cohort">
+              <Select id="reports-cohort" value={cohortId} onChange={(e) => { setError(null); setCohortId(e.target.value); }}>
+                <option value="">Selecciona una cohorte…</option>
+                {cohorts.map((cohort) => <option key={cohort.id} value={cohort.id}>{cohort.name}</option>)}
+              </Select>
+            </FormField>
+            <FormField label="Formulario" htmlFor="reports-form">
+              <Select id="reports-form" value={formId} onChange={(e) => { setError(null); setFormId(e.target.value); }}>
+                <option value="">Selecciona un formulario…</option>
+                {forms.map((form) => <option key={form.id} value={form.id}>{form.title}</option>)}
+              </Select>
+            </FormField>
           </Selectors>
         )}
         {error && <FormStatusMessage variant="error" role="alert">{error}</FormStatusMessage>}
       </Card>
-      {loadState === "loaded" && !cohortId && !formId && <EmptyState title="Elige una cohorte y un formulario" description="Podrás generar el PDF con el reporte general e individual." />}
-      {cohortId && formId && <Card><ReportGeneratorPanel cohortId={cohortId} formId={formId} /></Card>}
+      {loadState === "loaded" && 
+                    !cohortId && 
+                    !formId && <EmptyState title="Elige una cohorte y un formulario" description="Podrás generar el PDF con el reporte general e individual." />
+      }
+      {cohortId && 
+            formId && 
+                  <Card>
+                    <ReportGeneratorPanel cohortId={cohortId} formId={formId} />
+                  </Card>
+      }
     </Page> 
   );
 }
