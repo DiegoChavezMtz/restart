@@ -13,6 +13,25 @@ import type {
   FormSkill,
   FormStatus,
   Invitation,
+  IkigaiProfile,
+  EmploymentProfile,
+  ExperienceEntry,
+  SkillItem,
+  EducationEntry,
+  ProfileItemOrigin,
+  SkillCategory,
+  AchievementEvidence,
+  CvContent,
+  CvQualityCheckResult,
+  CvStatus,
+  CvVersion,
+  JobApplication,
+  JobApplicationStatusEvent,
+  JobKeyword,
+  JobSource,
+  JobTarget,
+  RecruiterResearch,
+  UserProfile,
   Question,
   QuestionOptionBranch,
   QuestionSkillWeight,
@@ -51,6 +70,123 @@ export interface AuthRepository {
   ): Promise<Invitation>;
   deactivateInvitation(invitationId: string, adminAccessToken: string): Promise<void>;
   listInvitationsByCohort(cohortId: string, adminAccessToken: string): Promise<Invitation[]>;
+}
+
+export interface UpdateIkigaiProfileInput {
+  whatYouLove?: string;
+  whatYouAreGoodAt?: string;
+  whatWorldNeeds?: string;
+  whatYouCanBePaidFor?: string;
+  synthesis?: string | null;
+}
+
+export interface IkigaiRepository {
+  getIkigaiProfile(accessToken: string): Promise<IkigaiProfile | null>;
+  upsertIkigaiProfile(
+    input: UpdateIkigaiProfileInput,
+    accessToken: string
+  ): Promise<IkigaiProfile>;
+}
+
+export interface UpdateEmploymentProfileInput {
+  headline?: string;
+  summary?: string;
+}
+
+export interface CreateExperienceEntryInput {
+  organization: string;
+  role: string;
+  location?: string;
+  startDate?: string;
+  endDate?: string | null;
+  isCurrent?: boolean;
+  contextDescription?: string;
+  order?: number;
+  origin?: ProfileItemOrigin;
+}
+
+export type UpdateExperienceEntryInput = Partial<CreateExperienceEntryInput>;
+
+export interface CreateSkillItemInput {
+  name: string;
+  category: SkillCategory;
+  origin?: ProfileItemOrigin;
+}
+
+export type UpdateSkillItemInput = Partial<CreateSkillItemInput>;
+
+export interface CreateEducationEntryInput {
+  institution: string;
+  degree: string;
+  fieldOfStudy?: string;
+  startDate?: string;
+  endDate?: string | null;
+  isCurrent?: boolean;
+}
+
+export type UpdateEducationEntryInput = Partial<CreateEducationEntryInput>;
+
+export interface EmploymentProfileRepository {
+  getEmploymentProfile(accessToken: string): Promise<EmploymentProfile | null>;
+  updateEmploymentProfile(input: UpdateEmploymentProfileInput, accessToken: string): Promise<EmploymentProfile>;
+  addExperienceEntry(input: CreateExperienceEntryInput, accessToken: string): Promise<ExperienceEntry>;
+  updateExperienceEntry(id: string, input: UpdateExperienceEntryInput, accessToken: string): Promise<ExperienceEntry>;
+  deleteExperienceEntry(id: string, accessToken: string): Promise<void>;
+  addSkillItem(input: CreateSkillItemInput, accessToken: string): Promise<SkillItem>;
+  updateSkillItem(id: string, input: UpdateSkillItemInput, accessToken: string): Promise<SkillItem>;
+  deleteSkillItem(id: string, accessToken: string): Promise<void>;
+  addEducationEntry(input: CreateEducationEntryInput, accessToken: string): Promise<EducationEntry>;
+  updateEducationEntry(id: string, input: UpdateEducationEntryInput, accessToken: string): Promise<EducationEntry>;
+  deleteEducationEntry(id: string, accessToken: string): Promise<void>;
+}
+
+export interface JobTargetRepository {
+  listJobTargets(accessToken: string): Promise<JobTarget[]>;
+  getJobTarget(id: string, accessToken: string): Promise<JobTarget | null>;
+  createJobTarget(input: { sourceSite: JobSource; rawText: string; companyName: string | null; roleTitle: string | null }, accessToken: string): Promise<JobTarget>;
+  saveKeywords(jobTargetId: string, keywords: Array<Omit<JobKeyword, "id" | "jobTargetId">>, accessToken: string): Promise<JobKeyword[]>;
+}
+export interface EvidenceRepository {
+  listByExperience(experienceEntryId: string, accessToken: string): Promise<AchievementEvidence[]>;
+  create(input: Omit<AchievementEvidence, "id" | "createdAt">, accessToken: string): Promise<AchievementEvidence>;
+}
+export interface CvRepository {
+  list(accessToken: string): Promise<CvVersion[]>;
+  get(id: string, accessToken: string): Promise<CvVersion | null>;
+  create(input: { jobTargetId: string; title: string; content: CvContent }, accessToken: string): Promise<CvVersion>;
+  updateContent(id: string, content: CvContent, accessToken: string): Promise<CvVersion>;
+  // Cambia el título como parte de un cambio de contenido (aplica una nueva
+  // propuesta de resumen) — por eso reinicia quality_check/status, igual que
+  // updateContent. Para un renombrado puramente cosmético usa renameCv.
+  updateTitle(id: string, title: string, accessToken: string): Promise<CvVersion>;
+  // Renombra sin efectos secundarios — no toca quality_check ni status.
+  renameCv(id: string, title: string, accessToken: string): Promise<CvVersion>;
+  setQualityCheck(id: string, result: CvQualityCheckResult, accessToken: string): Promise<CvVersion>;
+  setStatus(id: string, status: CvStatus, accessToken: string): Promise<CvVersion>;
+}
+export interface ApplicationRepository {
+  list(accessToken: string): Promise<JobApplication[]>;
+  get(id: string, accessToken: string): Promise<JobApplication | null>;
+  create(input: Omit<JobApplication, "id" | "userId" | "statusUpdatedAt">, accessToken: string): Promise<JobApplication>;
+  updateStatus(id: string, status: JobApplication["status"], accessToken: string): Promise<JobApplication>;
+  updateType(id: string, type: JobApplication["applicationType"], accessToken: string): Promise<JobApplication>;
+  listStatusEvents(accessToken: string): Promise<JobApplicationStatusEvent[]>;
+  getResearch(id: string, accessToken: string): Promise<RecruiterResearch | null>;
+  upsertResearch(input: RecruiterResearch, accessToken: string): Promise<RecruiterResearch>;
+}
+
+export interface UpsertUserProfileInput {
+  phone?: string;
+  location?: string;
+  linkedinUrl?: string | null;
+}
+
+export interface UserProfileRepository {
+  getUserProfile(accessToken: string): Promise<UserProfile | null>;
+  upsertUserProfile(input: UpsertUserProfileInput, accessToken: string): Promise<UserProfile>;
+  // Actualiza public.users.full_name directo — el RLS y el trigger de
+  // endurecimiento de auth ya lo permiten (solo protegen role/cohort_id).
+  updateOwnFullName(fullName: string, accessToken: string): Promise<void>;
 }
 
 export interface CreateCohortInput {

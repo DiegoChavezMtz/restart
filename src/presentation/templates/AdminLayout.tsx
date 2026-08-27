@@ -237,6 +237,7 @@ const NAV_ITEMS = [
   { href: "/admin/reports", label: "Reportes", title: "Reportes" },
   { href: "/admin/users", label: "Cuentas", title: "Cuentas" },
   { href: "/admin/cases", label: "Casos", title: "Casos" },
+  { href: "/admin/employment-ai", label: "IA de empleo", title: "IA de empleo" },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -256,7 +257,10 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   const navigation = (onNavigate?: () => void) => (
     <Nav aria-label="Navegación principal">
       <NavLabel>Gestión</NavLabel>
-      {NAV_ITEMS.filter((item) => item.href !== "/admin/users" || user?.role === "admin" || user?.role === "super_admin").map((item) => {
+      {NAV_ITEMS.filter((item) => {
+        if (item.href === "/admin/employment-ai") return user?.role === "super_admin";
+        return item.href !== "/admin/users" || user?.role === "admin" || user?.role === "super_admin";
+      }).map((item) => {
         const active = isActive(pathname, item.href);
         return (
           <NavLink

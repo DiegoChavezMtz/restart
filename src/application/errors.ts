@@ -176,3 +176,15 @@ export class NoParticipantsFoundError extends UseCaseError {
     super("This cohort has no eligible participants", 404);
   }
 }
+
+export class LlmDisabledError extends UseCaseError {
+  constructor() {
+    super("La asistencia con IA está desactivada temporalmente por el administrador.", 503, "LLM_DISABLED");
+  }
+}
+
+export class LlmResponseError extends UseCaseError {
+  constructor(message = "No fue posible generar el contenido solicitado.") {
+    super(message, 502, "LLM_RESPONSE_ERROR");
+  }
+}

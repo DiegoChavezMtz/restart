@@ -38,6 +38,13 @@ const FOCUSABLE_SELECTOR =
 
 export function Modal({ open, onClose, children, ariaLabel = "Diálogo" }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  // Las vistas suelen pasar callbacks inline. Guardamos siempre el más reciente
+  // sin reiniciar el ciclo de foco del diálogo cada vez que cambia un campo.
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -47,7 +54,7 @@ export function Modal({ open, onClose, children, ariaLabel = "Diálogo" }: Modal
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -77,12 +84,12 @@ export function Modal({ open, onClose, children, ariaLabel = "Diálogo" }: Modal
       document.body.style.overflow = originalOverflow;
       previouslyFocused?.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
   return createPortal(
-    <Overlay onClick={onClose}>
+    <Overlay onClick={() => onCloseRef.current()}>
       <Panel
         ref={panelRef}
         onClick={(e) => e.stopPropagation()}

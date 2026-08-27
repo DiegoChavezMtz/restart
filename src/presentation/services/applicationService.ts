@@ -1,0 +1,10 @@
+import type { JobApplication, RecruiterResearch } from "@/domain/entities";
+import { axiosClient } from "./axiosClient";
+export const listApplications = async () => (await axiosClient.get<JobApplication[]>("/employment/applications")).data;
+export const createApplication = async (input: { jobTargetId: string; cvVersionId: string; appliedAt: string }) => (await axiosClient.post<JobApplication>("/employment/applications", input)).data;
+export const updateApplicationStatus = async (id: string, status: JobApplication["status"]) => (await axiosClient.patch<JobApplication>(`/employment/applications/${id}`, { status })).data;
+export const getApplication = async (id: string) => (await axiosClient.get<JobApplication>(`/employment/applications/${id}`)).data;
+export const getOutreachResearch = async (id: string) => (await axiosClient.get<RecruiterResearch | null>(`/employment/applications/${id}/outreach`)).data;
+export const generateOutreachMessage = async (id: string, input: { recruiterName: string; recruiterRole: string; companyTenureNote: string; recentCompanyFact: string; commonGroundNote: string }) => (await axiosClient.post<RecruiterResearch>(`/employment/applications/${id}/outreach`, input)).data;
+export const saveOutreachDraft = async (id: string, input: Omit<RecruiterResearch, "jobApplicationId" | "completedAt">) => (await axiosClient.put<RecruiterResearch>(`/employment/applications/${id}/outreach`, input)).data;
+export const confirmOutreachSent = async (id: string) => (await axiosClient.post<{ application: JobApplication; research: RecruiterResearch }>(`/employment/applications/${id}/outreach/confirm`)).data;

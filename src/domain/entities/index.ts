@@ -12,6 +12,153 @@ export interface User {
   createdAt: string;
 }
 
+// Perfil de autoconocimiento del módulo de empleabilidad. Es una entidad
+// independiente de Forms: permanece editable durante toda la experiencia.
+export interface IkigaiProfile {
+  id: string;
+  userId: string;
+  whatYouLove: string;
+  whatYouAreGoodAt: string;
+  whatWorldNeeds: string;
+  whatYouCanBePaidFor: string;
+  synthesis: string | null;
+  updatedAt: string;
+}
+
+export type ProfileItemOrigin =
+  | { type: "ikigai"; refId: string | null }
+  | { type: "exploration"; refId: string | null }
+  | { type: "manual"; refId: null };
+
+export interface EmploymentProfile {
+  id: string;
+  userId: string;
+  headline: string;
+  summary: string;
+  updatedAt: string;
+  experience: ExperienceEntry[];
+  skills: SkillItem[];
+  education: EducationEntry[];
+}
+
+export interface ExperienceEntry {
+  id: string;
+  profileId: string;
+  organization: string;
+  role: string;
+  location: string;
+  startDate: string;
+  endDate: string | null;
+  isCurrent: boolean;
+  contextDescription: string;
+  order: number;
+  origin: ProfileItemOrigin;
+}
+
+export type SkillCategory = "hard" | "soft" | "tool" | "language";
+
+export interface SkillItem {
+  id: string;
+  profileId: string;
+  name: string;
+  category: SkillCategory;
+  origin: ProfileItemOrigin;
+}
+
+export interface EducationEntry {
+  id: string;
+  profileId: string;
+  institution: string;
+  degree: string;
+  fieldOfStudy: string;
+  startDate: string;
+  endDate: string | null;
+  isCurrent: boolean;
+}
+
+export type JobSource = "linkedin" | "indeed" | "occ" | "otro";
+export type KeywordRelevance = "high" | "medium" | "low";
+
+export interface JobTarget {
+  id: string;
+  userId: string;
+  sourceSite: JobSource;
+  rawText: string;
+  companyName: string | null;
+  roleTitle: string | null;
+  createdAt: string;
+  keywords: JobKeyword[];
+}
+
+export interface JobKeyword {
+  id: string;
+  jobTargetId: string;
+  keyword: string;
+  relevance: KeywordRelevance;
+  matchedInProfile: boolean;
+}
+
+export interface AchievementEvidence {
+  id: string;
+  experienceEntryId: string;
+  claim: string;
+  metricValue: string | null;
+  metricConfirmedByUser: boolean;
+  createdAt: string;
+}
+
+export type CvStatus = "draft" | "quality_review" | "approved" | "sent";
+export interface CvBullet { id: string; text: string; evidenceId: string | null; approved: boolean; }
+export interface CvContent {
+  contact: { fullName: string; email: string; phone: string; location: string; linkedinUrl: string | null };
+  summary: string;
+  experience: Array<{ experienceEntryId: string; organization: string; role: string; location: string; startDate: string; endDate: string | null; bullets: CvBullet[] }>;
+  education: Array<{ institution: string; degree: string; fieldOfStudy: string; startDate: string; endDate: string | null }>;
+  skills: string[];
+}
+export interface CvQualityCheckResult {
+  spellingOk: boolean;
+  spellingIssues: string[];
+  lengthOk: boolean;
+  noUnconfirmedNumbers: boolean;
+  coherenceNotes: string[];
+  checkedAt: string;
+  layoutPageCount?: number;
+}
+
+// Datos de contacto — plataforma, no exclusivo de empleo. 1:1 con el usuario.
+// Ver supabase/sql/046_user_profiles.sql y docs/MODULO_EMPLEO.md.
+export interface UserProfile {
+  id: string;
+  userId: string;
+  phone: string;
+  location: string;
+  linkedinUrl: string | null;
+  updatedAt: string;
+}
+export interface CvVersion {
+  id: string; userId: string; jobTargetId: string; title: string; status: CvStatus;
+  content: CvContent; qualityCheck: CvQualityCheckResult | null; createdAt: string; updatedAt: string;
+}
+
+export type ApplicationStatus = "applied" | "response" | "interview" | "offer" | "rejected";
+export type ApplicationType = "proactive" | "reactive";
+export interface JobApplication {
+  id: string; userId: string; jobTargetId: string; cvVersionId: string; source: JobSource;
+  applicationType: ApplicationType; companyName: string; roleTitle: string; status: ApplicationStatus;
+  appliedAt: string; statusUpdatedAt: string;
+}
+export interface JobApplicationStatusEvent {
+  id: string;
+  jobApplicationId: string;
+  status: ApplicationStatus;
+  occurredAt: string;
+}
+export interface RecruiterResearch {
+  jobApplicationId: string; recruiterName: string; recruiterRole: string; companyTenureNote: string;
+  recentCompanyFact: string; commonGroundNote: string; outreachMessage: string; completedAt: string | null;
+}
+
 export interface Invitation {
   id: string;
   token: string;

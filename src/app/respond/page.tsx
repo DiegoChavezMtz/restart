@@ -9,6 +9,7 @@ import { Table, TableScroll, Tbody, Td, Th, Thead, Tr } from "@/presentation/ato
 import { EmptyState, LoadingState } from "@/presentation/molecules/AsyncState";
 import { FormStatusMessage } from "@/presentation/molecules/FormStatusMessage";
 import type { FormResponseStatus } from "@/domain/entities";
+import { getProfileCompletionStatus } from "@/presentation/services/profileCompletionService";
 import * as responseService from "@/presentation/services/responseService";
 import type { VisibleForm } from "@/presentation/services/responseService";
 
@@ -46,6 +47,28 @@ const Card = styled.div`
   }
 `;
 
+const EmploymentBanner = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${(props) => props.theme.spacing.md};
+  padding: ${(props) => props.theme.spacing.lg} ${(props) => props.theme.spacing.xl};
+  border-radius: 16px;
+  background: linear-gradient(135deg, ${(props) => props.theme.colors.primary}, ${(props) => props.theme.colors.accentPurple});
+  color: ${(props) => props.theme.colors.background};
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+`;
+
+const EmploymentBannerText = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(props) => props.theme.spacing.xs};
+`;
+
 type LoadState = "loading" | "loaded" | "error";
 
 const STATUS_TONE: Record<"not_started" | FormResponseStatus, "neutral" | "success" | "warning"> = {
@@ -64,6 +87,7 @@ export default function RespondListPage() {
   const [visibleForms, setVisibleForms] = useState<VisibleForm[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
+  const [employmentProfileComplete, setEmploymentProfileComplete] = useState(false);
 
   useEffect(() => {
     responseService
@@ -78,6 +102,14 @@ export default function RespondListPage() {
       });
   }, []);
 
+  useEffect(() => {
+    // Silencioso a propósito: si falla, simplemente no se muestra el botón
+    // de edición — no es crítico para el resto de la página.
+    getProfileCompletionStatus()
+      .then((status) => setEmploymentProfileComplete(status.complete))
+      .catch(() => setEmploymentProfileComplete(false));
+  }, []);
+
   return (
     <Page>
       <Heading>
@@ -85,6 +117,20 @@ export default function RespondListPage() {
         <Subtitle>Aquí encontrarás las evaluaciones disponibles y podrás continuar las que dejaste pendientes.</Subtitle>
       </Heading>
       {error && <FormStatusMessage variant="error" role="alert">{error}</FormStatusMessage>}
+      <EmploymentBanner>
+        <EmploymentBannerText>
+          <strong>Empleabilidad</strong>
+          <span>Arma tu perfil, genera CVs adaptados a cada vacante y da seguimiento a tus postulaciones.</span>
+        </EmploymentBannerText>
+        <Button as={Link} href="/employment" variant="secondary">
+          Ir a empleabilidad
+        </Button>
+        {employmentProfileComplete && (
+          <Button as={Link} href="/employment/complete-profile" variant="secondary">
+            Editar mis datos de contacto
+          </Button>
+        )}
+      </EmploymentBanner>
       <Card>
         {loadState === "loading" && <LoadingState label="Cargando tus formularios…" />}
         {loadState === "error" && <EmptyState title="No pudimos cargar tus formularios" description="Actualiza la página para volver a intentarlo." />}
