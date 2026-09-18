@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { handleRouteError } from "@/app/api/_lib/handleRouteError";
 import { readJsonObject } from "@/app/api/_lib/readJsonBody";
-import { optionalBoolean, optionalString, requiredString } from "@/app/api/_lib/formRequestValidation";
+import { optionalBoolean, optionalString, optionalTags, requiredString } from "@/app/api/_lib/formRequestValidation";
 import { requireUser } from "@/app/api/_lib/requireUser";
 import { getForm } from "@/application/use-cases/forms/GetForm";
 import { updateFormDetails } from "@/application/use-cases/forms/UpdateFormDetails";
@@ -39,6 +39,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
     const description = optionalString(body, "description");
     const allowsPartialSave = optionalBoolean(body, "allowsPartialSave");
     const instructionsPopup = optionalString(body, "instructionsPopup");
+    const tags = optionalTags(body, "tags");
 
     const formRepo = new SupabaseFormRepository();
     const form = await updateFormDetails(formRepo, {
@@ -47,6 +48,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams): Prom
       description,
       allowsPartialSave,
       instructionsPopup,
+      tags,
       requestedBy: user,
       adminAccessToken: accessToken,
     });

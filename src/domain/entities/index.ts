@@ -186,6 +186,7 @@ export interface Form {
   acceptingResponses: boolean;
   allowsPartialSave: boolean;
   instructionsPopup: string | null;
+  tags: string[];
   deadlineAt: string | null; // reservado, sin lógica activa aún
   createdBy: string;
   createdAt: string;

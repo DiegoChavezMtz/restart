@@ -244,6 +244,7 @@ export default function FormBuilderPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [instructionsPopup, setInstructionsPopup] = useState("");
+  const [tags, setTags] = useState("");
 
   const [editorState, setEditorState] = useState<
     { mode: "create" } | { mode: "edit"; question: Question } | null
@@ -263,6 +264,7 @@ export default function FormBuilderPage() {
         setTitle(result.form.title);
         setDescription(result.form.description ?? "");
         setInstructionsPopup(result.form.instructionsPopup ?? "");
+        setTags(result.form.tags.join(", "));
         setLoadState("loaded");
       })
       .catch((err) => {
@@ -338,6 +340,7 @@ export default function FormBuilderPage() {
         title,
         description: description || null,
         instructionsPopup: instructionsPopup.trim() || null,
+        tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean),
       });
       setForm(updated);
       setNotice("La configuración se guardó.");
@@ -564,6 +567,10 @@ export default function FormBuilderPage() {
           <FormField label="Instrucciones (popup opcional)" htmlFor="builder-instructions">
             <TextArea id="builder-instructions" value={instructionsPopup} onChange={(e) => setInstructionsPopup(e.target.value)} />
             <HelperText>Déjalo vacío si no necesitas mostrar instrucciones antes de iniciar.</HelperText>
+          </FormField>
+          <FormField label="Etiquetas de análisis" htmlFor="builder-tags">
+            <Input id="builder-tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="calidad-restart, taller" />
+            <HelperText>Sepáralas con comas. Usa “calidad-restart” para incluir este formulario en el reporte de Calidad.</HelperText>
           </FormField>
           <SwitchRow><Switch checked={form.acceptingResponses} onChange={handleToggleAcceptingResponses} /> Aceptar respuestas ahora</SwitchRow>
           <SwitchRow><Checkbox checked={form.allowsPartialSave} onChange={(e) => handleToggleAllowsPartialSave(e.target.checked)} /> Permitir guardar y continuar después</SwitchRow>

@@ -36,6 +36,17 @@ export function optionalBoolean(body: JsonObject, field: string): boolean | unde
   return value;
 }
 
+export function optionalTags(body: JsonObject, field: string): string[] | undefined {
+  const value = body[field];
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || !value.every((tag) => typeof tag === "string")) {
+    invalid(`${field} debe ser una lista de textos.`);
+  }
+  const tags = [...new Set(value.map((tag) => tag.trim().toLowerCase()).filter(Boolean))];
+  if (tags.some((tag) => tag.length > 50)) invalid(`${field} no puede contener etiquetas de más de 50 caracteres.`);
+  return tags;
+}
+
 export function optionalTimeLimit(body: JsonObject): number | null | undefined {
   const value = body.timeLimitSeconds;
   if (value === undefined || value === null) return value;

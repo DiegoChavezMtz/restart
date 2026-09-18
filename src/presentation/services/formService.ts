@@ -43,6 +43,7 @@ export async function updateFormDetails(
     description?: string | null;
     allowsPartialSave?: boolean;
     instructionsPopup?: string | null;
+    tags?: string[];
   }
 ): Promise<Form> {
   const { data } = await axiosClient.patch<Form>(`/forms/${encodeURIComponent(formId)}`, input);

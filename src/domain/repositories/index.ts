@@ -212,6 +212,7 @@ export interface UpdateFormDetailsInput {
   description?: string | null;
   allowsPartialSave?: boolean;
   instructionsPopup?: string | null;
+  tags?: string[];
 }
 
 export interface CreateQuestionInput {

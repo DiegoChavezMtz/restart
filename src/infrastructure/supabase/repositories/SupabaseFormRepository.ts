@@ -83,6 +83,7 @@ export class SupabaseFormRepository implements FormRepository {
         ...(input.instructionsPopup !== undefined && {
           instructions_popup: input.instructionsPopup,
         }),
+        ...(input.tags !== undefined && { tags: input.tags }),
         updated_at: new Date().toISOString(),
       })
       .eq("id", formId)

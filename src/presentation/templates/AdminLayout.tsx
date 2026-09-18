@@ -235,9 +235,10 @@ const NAV_ITEMS = [
   { href: "/admin/attendance", label: "Asistencia", title: "Asistencia" },
   { href: "/admin/stats", label: "Estadísticas", title: "Estadísticas" },
   { href: "/admin/reports", label: "Reportes", title: "Reportes" },
+  { href: "/admin/quality", label: "Calidad", title: "Calidad" },
   { href: "/admin/users", label: "Cuentas", title: "Cuentas" },
   { href: "/admin/cases", label: "Casos", title: "Casos" },
-  { href: "/admin/employment-ai", label: "IA de empleo", title: "IA de empleo" },
+  { href: "/admin/employment-ai", label: "Control de IA", title: "Control de IA" },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -258,6 +259,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
     <Nav aria-label="Navegación principal">
       <NavLabel>Gestión</NavLabel>
       {NAV_ITEMS.filter((item) => {
+        if (user?.role === "psicologa") return item.href === "/admin/quality";
         if (item.href === "/admin/employment-ai") return user?.role === "super_admin";
         return item.href !== "/admin/users" || user?.role === "admin" || user?.role === "super_admin";
       }).map((item) => {
