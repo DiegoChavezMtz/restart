@@ -53,6 +53,9 @@ export default function UserManagementPage() {
   const [passwordTarget, setPasswordTarget] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [teamInviteOpen, setTeamInviteOpen] = useState(false);
+  const [teamRole, setTeamRole] = useState<"admin" | "psicologa">("admin");
+  const [teamInvitationLink, setTeamInvitationLink] = useState<string | null>(null);
 
   const isSuperAdmin = actor?.role === "super_admin";
   const selected = users.find((item) => item.id === selectedId) ?? null;
@@ -116,11 +119,27 @@ export default function UserManagementPage() {
     } finally { setBusy(null); }
   }
 
+  async function createTeamInvitation() {
+    setError(null); setSuccess(null); setBusy("team-invitation");
+    try {
+      const invitation = await userManagement.createTeamInvitation(teamRole);
+      setTeamInvitationLink(`${window.location.origin}/register?token=${invitation.token}`);
+      setSuccess(`La invitación para ${roleLabels[teamRole]} está lista.`);
+    } catch (caught) {
+      setError((caught as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "No se pudo crear la invitación de equipo.");
+    } finally { setBusy(null); }
+  }
+
   if (loading) return <LoadingState label="Cargando cuentas…" />;
   return <Page>
     <Intro>Gestiona cuentas operativas sin exponer información clínica. Los cambios se validan nuevamente en Supabase; un admin sólo puede administrar usuarios y cuentas de prueba.</Intro>
     {error && <FormStatusMessage variant="error" role="alert">{error}</FormStatusMessage>}
     {success && <FormStatusMessage variant="success" role="status">{success}</FormStatusMessage>}
+    {isSuperAdmin && <Card>
+      <ModalTitle>Invitar miembro del equipo</ModalTitle>
+      <Intro>Genera un enlace de un solo uso para dar de alta a una persona administradora o psicóloga, sin asignarla a una cohorte.</Intro>
+      <Button onClick={() => { setTeamInvitationLink(null); setTeamInviteOpen(true); }}>Invitar miembro del equipo</Button>
+    </Card>}
     <Card>
       {users.length === 0 ? <EmptyState title="No hay cuentas disponibles" description="Cuando existan perfiles registrados aparecerán aquí." /> : <TableScroll><Table>
         <Thead><Tr><Th>Cuenta</Th><Th>Rol</Th><Th>Activa</Th><Th>Acciones</Th></Tr></Thead>
@@ -159,6 +178,20 @@ export default function UserManagementPage() {
         <FormField label="Nueva contraseña" htmlFor="managed-user-password"><Input id="managed-user-password" type="password" name="newPassword" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} minLength={8} required disabled={busy?.startsWith("password:")} /></FormField>
         <FormField label="Confirmar contraseña" htmlFor="managed-user-confirm-password"><Input id="managed-user-confirm-password" type="password" name="confirmPassword" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} minLength={8} required disabled={busy?.startsWith("password:")} /></FormField>
         <ModalActions><Button type="button" variant="secondary" onClick={closePasswordDialog} disabled={busy?.startsWith("password:")}>Cancelar</Button><Button type="submit" disabled={busy?.startsWith("password:")}>{busy?.startsWith("password:") ? "Actualizando…" : "Actualizar contraseña"}</Button></ModalActions>
+      </ModalContent>
+    </Modal>
+    <Modal open={teamInviteOpen} onClose={() => { if (busy !== "team-invitation") setTeamInviteOpen(false); }} ariaLabel="Invitar miembro del equipo">
+      <ModalContent as="div">
+        <ModalTitle>Invitar miembro del equipo</ModalTitle>
+        {!teamInvitationLink ? <>
+          <ModalDescription>El enlace asignará el rol seleccionado al completar el registro. No se puede usar para crear super administradores y se desactivará al usarse.</ModalDescription>
+          <FormField label="Rol" htmlFor="team-invitation-role"><Select id="team-invitation-role" value={teamRole} onChange={(event) => setTeamRole(event.target.value as "admin" | "psicologa")} disabled={busy === "team-invitation"}><option value="admin">Administrador</option><option value="psicologa">Psicóloga</option></Select></FormField>
+          <ModalActions><Button type="button" variant="secondary" onClick={() => setTeamInviteOpen(false)} disabled={busy === "team-invitation"}>Cancelar</Button><Button type="button" onClick={createTeamInvitation} disabled={busy === "team-invitation"}>{busy === "team-invitation" ? "Generando…" : "Generar enlace"}</Button></ModalActions>
+        </> : <>
+          <ModalDescription>Comparte este enlace sólo con la persona invitada. Dejará de funcionar después de que cree su cuenta.</ModalDescription>
+          <Input aria-label="Enlace de invitación de equipo" value={teamInvitationLink} readOnly onFocus={(event) => event.currentTarget.select()} />
+          <ModalActions><Button type="button" onClick={() => setTeamInviteOpen(false)}>Listo</Button></ModalActions>
+        </>}
       </ModalContent>
     </Modal>
   </Page>;

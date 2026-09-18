@@ -3,11 +3,11 @@ import type { Invitation } from "@/domain/entities";
 interface InvitationRow {
   id: string;
   token: string;
-  cohort_id: string;
+  cohort_id: string | null;
   created_by: string;
   is_active: boolean;
   created_at: string;
-  intended_role: "usuario" | "test";
+  intended_role: "admin" | "psicologa" | "usuario" | "test";
 }
 
 export function toDomainInvitation(row: InvitationRow): Invitation {

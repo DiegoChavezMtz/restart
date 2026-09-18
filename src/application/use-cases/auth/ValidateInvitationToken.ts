@@ -4,7 +4,7 @@ import type { AuthRepository } from "@/domain/repositories";
 export async function validateInvitationToken(
   repo: AuthRepository,
   token: string
-): Promise<{ cohortId: string }> {
+): Promise<{ cohortId: string | null }> {
   const normalizedToken = token.trim();
   if (!normalizedToken) throw new InvitationNotFoundError();
   const invitation = await repo.getInvitationByToken(normalizedToken);

@@ -1,4 +1,4 @@
-import type { User, UserRole } from "@/domain/entities";
+import type { Invitation, User, UserRole } from "@/domain/entities";
 import { axiosClient } from "./axiosClient";
 
 export type PsicologaCapability =
@@ -32,4 +32,9 @@ export async function listCapabilities(userId: string): Promise<ActiveCapability
 
 export async function setCapability(userId: string, capability: PsicologaCapability, enabled: boolean): Promise<void> {
   await axiosClient.patch(`/users/${encodeURIComponent(userId)}/capabilities`, { capability, enabled });
+}
+
+export async function createTeamInvitation(role: "admin" | "psicologa"): Promise<Invitation> {
+  const { data } = await axiosClient.post<Invitation>("/team-invitations", { role });
+  return data;
 }

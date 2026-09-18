@@ -54,8 +54,8 @@ export async function registerViaInvitation(input: {
   return data;
 }
 
-export async function validateInvitationToken(token: string): Promise<{ cohortId: string }> {
-  const { data } = await axiosClient.get<{ cohortId: string }>(
+export async function validateInvitationToken(token: string): Promise<{ cohortId: string | null }> {
+  const { data } = await axiosClient.get<{ cohortId: string | null }>(
     `/invitations/${encodeURIComponent(token)}`
   );
   return data;

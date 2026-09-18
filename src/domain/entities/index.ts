@@ -162,11 +162,11 @@ export interface RecruiterResearch {
 export interface Invitation {
   id: string;
   token: string;
-  cohortId: string;
+  cohortId: string | null;
   createdBy: string;
   isActive: boolean;
   createdAt: string;
-  intendedRole: "usuario" | "test";
+  intendedRole: "admin" | "psicologa" | "usuario" | "test";
 }
 
 export interface Cohort {
