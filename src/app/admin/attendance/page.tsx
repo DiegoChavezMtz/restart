@@ -106,7 +106,9 @@ export default function AdminAttendancePage() {
       attendanceService.listRecords(cohortId),
     ])
       .then(([detail, sessionList, recordList]) => {
-        setParticipants(detail.participants.filter((participant) => participant.role === "usuario"));
+        // Las cuentas test pueden recibir registros para probar el flujo, pero
+        // se excluyen del concentrado para no afectar las métricas operativas.
+        setParticipants(detail.participants.filter((participant) => participant.role === "usuario" || participant.role === "test"));
         setSessions(sessionList);
         setRecords(recordList);
       })
@@ -121,6 +123,11 @@ export default function AdminAttendancePage() {
     }
     return map;
   }, [records]);
+
+  const operationalParticipants = useMemo(
+    () => participants.filter((participant) => participant.role === "usuario"),
+    [participants]
+  );
 
   function handleCohortChange(value: string) {
     setIsLoadingDetail(Boolean(value));
@@ -224,7 +231,7 @@ export default function AdminAttendancePage() {
             />
           ) : (
             <AttendanceSummaryTable
-              participants={participants}
+              participants={operationalParticipants}
               sessions={sessions}
               records={records}
               cohortName={cohorts.find((cohort) => cohort.id === cohortId)?.name}

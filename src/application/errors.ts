@@ -177,6 +177,30 @@ export class NoParticipantsFoundError extends UseCaseError {
   }
 }
 
+export class BadgeClassNotFoundError extends UseCaseError {
+  constructor() {
+    super("Badge class not found", 404);
+  }
+}
+
+export class BadgeAssertionNotFoundError extends UseCaseError {
+  constructor() {
+    super("Badge assertion not found", 404);
+  }
+}
+
+export class BadgeAlreadyAssertedError extends UseCaseError {
+  constructor() {
+    super("This user already has this badge", 409);
+  }
+}
+
+export class InvalidBadgeInputError extends UseCaseError {
+  constructor(message: string) {
+    super(message, 400);
+  }
+}
+
 export class LlmDisabledError extends UseCaseError {
   constructor() {
     super("La asistencia con IA está desactivada temporalmente por el administrador.", 503, "LLM_DISABLED");
