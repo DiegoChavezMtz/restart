@@ -176,6 +176,43 @@ export interface Cohort {
   createdAt: string;
 }
 
+export type EvaluationStatus = "active" | "archived";
+export type EvaluationResultStatus = "draft" | "published";
+
+export interface Evaluation {
+  id: string;
+  cohortId: string;
+  cohortName?: string;
+  title: string;
+  description: string | null;
+  periodStart: string;
+  periodEnd: string;
+  status: EvaluationStatus;
+  createdAt: string;
+  assignedCount?: number;
+  publishedCount?: number;
+}
+
+export interface EvaluationResult {
+  id: string;
+  version: number;
+  status: EvaluationResultStatus;
+  score: number | null;
+  fileName: string | null;
+  publishedAt: string | null;
+}
+
+export interface EvaluationAssignment {
+  id: string;
+  evaluationId: string;
+  participantId: string;
+  participantName?: string;
+  participantEmail?: string;
+  assignedAt: string;
+  result: EvaluationResult | null;
+  draft: EvaluationResult | null;
+}
+
 export type FormStatus = "draft" | "published" | "closed" | "archived";
 
 export interface Form {

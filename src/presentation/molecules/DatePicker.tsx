@@ -344,3 +344,68 @@ export function DayField({ value, onChange, disabled, placeholder = "Selecciona 
     </>
   );
 }
+
+const RangeMonths = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: ${(props) => props.theme.spacing.xl};
+  @media (max-width: 640px) { grid-template-columns: 1fr; }
+`;
+const RangeMonthTitle = styled.h3`
+  margin-bottom: ${(props) => props.theme.spacing.sm};
+  color: ${(props) => props.theme.colors.textPrimary};
+  font-size: ${(props) => props.theme.typography.fontSize.md};
+  text-align: center;
+`;
+const RangeDay = styled.button<{ $start: boolean; $end: boolean; $inside: boolean }>`
+  min-height: 38px; border: 0; border-radius: ${(p) => p.$start || p.$end ? "999px" : "0"};
+  background: ${(p) => p.$start || p.$end ? p.theme.colors.primary : p.$inside ? "color-mix(in srgb, " + p.theme.colors.primary + " 16%, transparent)" : "transparent"};
+  color: ${(p) => p.$start || p.$end ? p.theme.colors.background : p.theme.colors.textPrimary};
+  cursor: pointer; font: inherit;
+  &:hover { background: ${(p) => p.$start || p.$end ? p.theme.colors.primaryHover : p.theme.colors.surfaceHover}; }
+  &:focus-visible { outline: 2px solid ${(p) => p.theme.colors.focus}; outline-offset: 1px; }
+`;
+const RangeSummary = styled.p`
+  margin-bottom: ${(props) => props.theme.spacing.lg}; color: ${(props) => props.theme.colors.textSecondary};
+`;
+
+export interface DateRangeFieldProps {
+  startValue: string;
+  endValue: string;
+  onChange: (start: string, end: string) => void;
+  disabled?: boolean;
+}
+
+function addMonths(year: number, month: number, delta: number) {
+  const date = new Date(year, month + delta, 1);
+  return { year: date.getFullYear(), month: date.getMonth() };
+}
+
+/** Selector de rango con dos meses visibles, pensado para elegir el periodo de una evaluación. */
+export function DateRangeField({ startValue, endValue, onChange, disabled }: DateRangeFieldProps) {
+  const [open, setOpen] = useState(false);
+  const start = parseYearMonthDay(startValue);
+  const end = parseYearMonthDay(endValue);
+  const now = new Date();
+  const [view, setView] = useState(() => ({ year: start?.year ?? now.getFullYear(), month: start?.monthIndex ?? now.getMonth() }));
+  const label = start && end ? `${formatDisplayDate(start)} — ${formatDisplayDate(end)}` : start ? `${formatDisplayDate(start)} — Selecciona fecha final` : "Selecciona el periodo";
+  const choose = (value: string) => {
+    if (!startValue || endValue || value < startValue) onChange(value, "");
+    else onChange(startValue, value);
+  };
+  const drawMonth = (year: number, month: number) => {
+    const days = new Date(year, month + 1, 0).getDate();
+    const first = (new Date(year, month, 1).getDay() + 6) % 7;
+    return <div key={`${year}-${month}`}><RangeMonthTitle>{MONTH_NAMES[month]} {year}</RangeMonthTitle><DayGrid>
+      {WEEKDAY_ABBR.map((weekday, index) => <WeekdayLabel key={`${weekday}-${index}`}>{weekday}</WeekdayLabel>)}
+      {Array.from({ length: first }, (_, i) => <EmptyCell key={`e-${i}`} />)}
+      {Array.from({ length: days }, (_, i) => { const value = `${year}-${pad(month + 1)}-${pad(i + 1)}`; return <RangeDay key={value} type="button" $start={value === startValue} $end={value === endValue} $inside={Boolean(startValue && endValue && value > startValue && value < endValue)} onClick={() => choose(value)}>{i + 1}</RangeDay>; })}
+    </DayGrid></div>;
+  };
+  return <><Trigger type="button" onClick={() => { if (!disabled) setOpen(true); }} disabled={disabled} $hasValue={Boolean(start)}><span>{label}</span><CalendarIcon aria-hidden="true">📅</CalendarIcon></Trigger>
+    <Modal open={open} onClose={() => setOpen(false)} ariaLabel="Seleccionar periodo de evaluación"><PanelTitle>Periodo de evaluación</PanelTitle><RangeSummary>{!startValue || endValue ? "Elige la fecha de inicio." : "Ahora elige la fecha final."}</RangeSummary>
+      <NavRow><NavButton type="button" onClick={() => setView(addMonths(view.year, view.month, -1))} aria-label="Mes anterior">‹</NavButton><NavLabel>Selecciona un rango</NavLabel><NavButton type="button" onClick={() => setView(addMonths(view.year, view.month, 1))} aria-label="Mes siguiente">›</NavButton></NavRow>
+      <RangeMonths>{drawMonth(view.year, view.month)}{(() => { const next = addMonths(view.year, view.month, 1); return drawMonth(next.year, next.month); })()}</RangeMonths>
+      <PanelFooter><Button type="button" variant="ghost" onClick={() => { onChange("", ""); }}>Limpiar</Button><Button type="button" variant="secondary" onClick={() => setOpen(false)}>Listo</Button></PanelFooter>
+    </Modal></>;
+}

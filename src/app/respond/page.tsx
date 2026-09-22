@@ -131,6 +131,13 @@ export default function RespondListPage() {
           </Button>
         )}
       </EmploymentBanner>
+      <EmploymentBanner>
+        <EmploymentBannerText>
+          <strong>Evaluaciones</strong>
+          <span>Consulta tus calificaciones y descarga el detalle de tus evaluaciones publicadas.</span>
+        </EmploymentBannerText>
+        <Button as={Link} href="/respond/evaluations" variant="secondary">Ver evaluaciones</Button>
+      </EmploymentBanner>
       <Card>
         {loadState === "loading" && <LoadingState label="Cargando tus formularios…" />}
         {loadState === "error" && <EmptyState title="No pudimos cargar tus formularios" description="Actualiza la página para volver a intentarlo." />}

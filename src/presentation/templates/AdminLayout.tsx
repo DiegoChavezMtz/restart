@@ -233,6 +233,7 @@ const NAV_ITEMS = [
   { href: "/admin/forms", label: "Formularios", title: "Formularios" },
   { href: "/admin/appointments", label: "Citas", title: "Citas" },
   { href: "/admin/attendance", label: "Asistencia", title: "Asistencia" },
+  { href: "/admin/evaluations", label: "Evaluaciones", title: "Evaluaciones" },
   { href: "/admin/stats", label: "Estadísticas", title: "Estadísticas" },
   { href: "/admin/reports", label: "Reportes", title: "Reportes" },
   { href: "/admin/quality", label: "Calidad", title: "Calidad" },
