@@ -19,6 +19,21 @@ const Page = styled.section`
   flex-direction: column;
   gap: ${(props) => props.theme.spacing.xl};
   max-width: 960px;
+  min-width: 0;
+`;
+
+const Section = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: ${(props) => props.theme.spacing.lg};
+  min-width: 0;
+`;
+
+const ModuleList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${(props) => props.theme.spacing.lg};
+  min-width: 0;
 `;
 
 const Heading = styled.div`
@@ -28,6 +43,11 @@ const Heading = styled.div`
 `;
 
 const Title = styled.h1`
+  color: ${(props) => props.theme.colors.textPrimary};
+  font-size: ${(props) => props.theme.typography.fontSize.xl};
+`;
+
+const SectionTitle = styled.h2`
   color: ${(props) => props.theme.colors.textPrimary};
   font-size: ${(props) => props.theme.typography.fontSize.xl};
 `;
@@ -48,26 +68,82 @@ const Card = styled.div`
   }
 `;
 
-const EmploymentBanner = styled.div`
+type ModuleTone = "employment" | "evaluations" | "attendance";
+
+const ModuleBanner = styled.div<{ $tone: ModuleTone }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: ${(props) => props.theme.spacing.md};
   padding: ${(props) => props.theme.spacing.lg} ${(props) => props.theme.spacing.xl};
   border-radius: 16px;
-  background: linear-gradient(135deg, ${(props) => props.theme.colors.primary}, ${(props) => props.theme.colors.accentPurple});
+  min-width: 0;
+  background: ${(props) => {
+    const gradients = {
+      employment: `linear-gradient(135deg, ${props.theme.colors.moduleEmploymentStart}, ${props.theme.colors.moduleEmploymentEnd})`,
+      evaluations: `linear-gradient(135deg, ${props.theme.colors.moduleEvaluationsStart}, ${props.theme.colors.moduleEvaluationsEnd})`,
+      attendance: `linear-gradient(135deg, ${props.theme.colors.moduleAttendanceStart}, ${props.theme.colors.moduleAttendanceEnd})`,
+    };
+    return gradients[props.$tone];
+  }};
   color: ${(props) => props.theme.colors.background};
 
   @media (max-width: 640px) {
     flex-direction: column;
     align-items: flex-start;
+    padding: ${(props) => props.theme.spacing.lg};
+
+    > a,
+    > button {
+      width: 100%;
+    }
   }
 `;
 
-const EmploymentBannerText = styled.div`
+const ModuleBannerText = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${(props) => props.theme.spacing.xs};
+  min-width: 0;
+
+  span {
+    overflow-wrap: anywhere;
+  }
+`;
+
+const FormsTable = styled(Table)`
+  table-layout: fixed;
+
+  th:first-child,
+  td:first-child {
+    width: 58%;
+    overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 767px) {
+    table-layout: auto;
+
+    && td {
+      display: block;
+      padding: ${(props) => props.theme.spacing.xs} 0;
+    }
+
+    && td:first-child {
+      padding-top: 0;
+      color: ${(props) => props.theme.colors.textPrimary};
+      font-size: ${(props) => props.theme.typography.fontSize.lg};
+      font-weight: ${(props) => props.theme.typography.fontWeight.medium};
+    }
+
+    && td:last-child {
+      padding-bottom: 0;
+    }
+
+    && td > a,
+    && td > button {
+      width: 100%;
+    }
+  }
 `;
 
 type LoadState = "loading" | "loaded" | "error";
@@ -120,68 +196,78 @@ export default function RespondListPage() {
 
   return (
     <Page>
-      <Heading>
-        <Title>Mis formularios</Title>
-        <Subtitle>Aquí encontrarás las evaluaciones disponibles y podrás continuar las que dejaste pendientes.</Subtitle>
-      </Heading>
       {error && <FormStatusMessage variant="error" role="alert">{error}</FormStatusMessage>}
-      <EmploymentBanner>
-        <EmploymentBannerText>
-          <strong>Empleabilidad</strong>
-          <span>Arma tu perfil, genera CVs adaptados a cada vacante y da seguimiento a tus postulaciones.</span>
-        </EmploymentBannerText>
-        <Button as={Link} href="/employment" variant="secondary">
-          Ir a empleabilidad
-        </Button>
-        {employmentProfileComplete && (
-          <Button as={Link} href="/employment/complete-profile" variant="secondary">
-            Editar mis datos de contacto
-          </Button>
-        )}
-      </EmploymentBanner>
-      <EmploymentBanner>
-        <EmploymentBannerText>
-          <strong>Evaluaciones</strong>
-          <span>Consulta tus calificaciones y descarga el detalle de tus evaluaciones publicadas.</span>
-        </EmploymentBannerText>
-        <Button as={Link} href="/respond/evaluations" variant="secondary">Ver evaluaciones</Button>
-      </EmploymentBanner>
-      {attendanceSummary && (
+      <Section>
+        <Heading>
+          <Title>Mi espacio</Title>
+          <Subtitle>Accede a las herramientas y el seguimiento de tu programa.</Subtitle>
+        </Heading>
+        <ModuleList>
+          <ModuleBanner $tone="employment">
+            <ModuleBannerText>
+              <strong>Empleabilidad</strong>
+              <span>Arma tu perfil, genera CVs adaptados a cada vacante y da seguimiento a tus postulaciones.</span>
+            </ModuleBannerText>
+            <Button as={Link} href="/employment" variant="secondary">
+              Ir a empleabilidad
+            </Button>
+            {employmentProfileComplete && (
+              <Button as={Link} href="/employment/complete-profile" variant="secondary">
+                Editar mis datos de contacto
+              </Button>
+            )}
+          </ModuleBanner>
+          <ModuleBanner $tone="evaluations">
+            <ModuleBannerText>
+              <strong>Evaluaciones</strong>
+              <span>Consulta tus calificaciones y descarga el detalle de tus evaluaciones publicadas.</span>
+            </ModuleBannerText>
+            <Button as={Link} href="/respond/evaluations" variant="secondary">Ver evaluaciones</Button>
+          </ModuleBanner>
+          {attendanceSummary && (
+            <ModuleBanner $tone="attendance">
+              <ModuleBannerText>
+                <strong>Mi asistencia</strong>
+                <span>Desde julio: {attendanceSummary.absent} falta{attendanceSummary.absent === 1 ? "" : "s"}, {attendanceSummary.late} retardo{attendanceSummary.late === 1 ? "" : "s"} y {attendanceSummary.justified} justificada{attendanceSummary.justified === 1 ? "" : "s"}.</span>
+              </ModuleBannerText>
+              <Button as={Link} href="/respond/attendance" variant="secondary">Ver detalle</Button>
+            </ModuleBanner>
+          )}
+        </ModuleList>
+      </Section>
+      <Section>
+        <Heading>
+          <SectionTitle>Mis formularios</SectionTitle>
+          <Subtitle>Aquí encontrarás las evaluaciones disponibles y podrás continuar las que dejaste pendientes.</Subtitle>
+        </Heading>
         <Card>
-          <Heading>
-            <Title as="h2">Mi asistencia</Title>
-            <Subtitle>Desde julio: {attendanceSummary.absent} falta{attendanceSummary.absent === 1 ? "" : "s"}, {attendanceSummary.late} retardo{attendanceSummary.late === 1 ? "" : "s"} y {attendanceSummary.justified} justificada{attendanceSummary.justified === 1 ? "" : "s"}.</Subtitle>
-          </Heading>
-          <Button as={Link} href="/respond/attendance" variant="secondary">Ver mi asistencia</Button>
+          {loadState === "loading" && <LoadingState label="Cargando tus formularios…" />}
+          {loadState === "error" && <EmptyState title="No pudimos cargar tus formularios" description="Actualiza la página para volver a intentarlo." />}
+          {loadState === "loaded" && visibleForms.length === 0 && <EmptyState title="No tienes formularios pendientes" description="Cuando te asignen una evaluación, aparecerá aquí." />}
+          {loadState === "loaded" && visibleForms.length > 0 && (
+            <TableScroll>
+              <FormsTable>
+                <Thead><Tr><Th>Formulario</Th><Th>Estado</Th><Th><span className="sr-only">Acción</span></Th></Tr></Thead>
+                <Tbody>
+                  {visibleForms.map(({ form, status }) => (
+                    <Tr key={form.id}>
+                      <Td>{form.title}</Td>
+                      <Td><Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge></Td>
+                      {status !== "completed" && (
+                        <Td>
+                          <Button as={Link} href={`/respond/${form.id}`} variant={status === "in_progress" ? "primary" : "secondary"}>
+                            {status === "in_progress" ? "Continuar" : "Responder"}
+                          </Button>
+                        </Td>
+                      )}
+                    </Tr>
+                  ))}
+                </Tbody>
+              </FormsTable>
+            </TableScroll>
+          )}
         </Card>
-      )}
-      <Card>
-        {loadState === "loading" && <LoadingState label="Cargando tus formularios…" />}
-        {loadState === "error" && <EmptyState title="No pudimos cargar tus formularios" description="Actualiza la página para volver a intentarlo." />}
-        {loadState === "loaded" && visibleForms.length === 0 && <EmptyState title="No tienes formularios pendientes" description="Cuando te asignen una evaluación, aparecerá aquí." />}
-        {loadState === "loaded" && visibleForms.length > 0 && (
-          <TableScroll>
-            <Table>
-              <Thead><Tr><Th>Formulario</Th><Th>Estado</Th><Th><span className="sr-only">Acción</span></Th></Tr></Thead>
-              <Tbody>
-                {visibleForms.map(({ form, status }) => (
-                  <Tr key={form.id}>
-                    <Td>{form.title}</Td>
-                    <Td><Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge></Td>
-                    <Td>
-                      {status !== "completed" ? (
-                        <Button as={Link} href={`/respond/${form.id}`} variant={status === "in_progress" ? "primary" : "secondary"}>
-                          {status === "in_progress" ? "Continuar" : "Responder"}
-                        </Button>
-                      ) : "—"}
-                    </Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </TableScroll>
-        )}
-      </Card>
+      </Section>
     </Page>
   );
 }

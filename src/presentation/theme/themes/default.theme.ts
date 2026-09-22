@@ -21,6 +21,12 @@ export const defaultTheme = {
     focus: rawColors.accent.cyan,
     accentCyan: rawColors.accent.cyan,
     accentPurple: rawColors.accent.purple,
+    moduleEmploymentStart: rawColors.brand.coral,
+    moduleEmploymentEnd: rawColors.accent.purple,
+    moduleEvaluationsStart: rawColors.accent.cyan,
+    moduleEvaluationsEnd: rawColors.accent.purple,
+    moduleAttendanceStart: rawColors.feedback.success,
+    moduleAttendanceEnd: rawColors.accent.cyan,
     success: rawColors.feedback.success,
     // "danger" is a distinct semantic role from "primary", but this palette
     // reuses the same coral for both — see docs/CONSTITUCION.md theming notes.
