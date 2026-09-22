@@ -38,9 +38,6 @@ export default function Home() {
       {status === "authenticated" && user && (
         <>
           <Subtitle>Hola, {user.fullName}</Subtitle>
-          <Button as={Link} href="/badges">
-            Ver mis badges
-          </Button>
           <Button variant="secondary" onClick={() => logout()}>
             Cerrar sesión
           </Button>
