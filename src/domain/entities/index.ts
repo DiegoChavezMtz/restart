@@ -391,6 +391,60 @@ export interface AppointmentFollowUp {
   forms: { templateId: string; title: string; status: "in_progress" | "completed" }[];
 }
 
+export interface BadgeIssuer {
+  id: string;
+  name: string;
+  url: string | null;
+  email: string | null;
+  imageUrl: string | null;
+  createdAt: string;
+}
+
+export interface BadgeClass {
+  id: string;
+  issuerId: string;
+  name: string;
+  description: string;
+  criteria: string;
+  imageUrl: string | null;
+  validMonths: number | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export type BadgeAssertionStatus = "active" | "revoked";
+
+export interface BadgeAssertion {
+  id: string;
+  badgeClassId: string;
+  recipientId: string;
+  issuedAt: string;
+  expiresAt: string | null;
+  status: BadgeAssertionStatus;
+  revokedAt: string | null;
+  revokedBy: string | null;
+  issuedBy: string;
+}
+
+// Vista pública, sin datos sensibles del participante, servida por la función
+// SECURITY DEFINER get_public_badge_assertion (048_badges.sql). Es lo único
+// visible en /badges/verify/[id] y en el JSON Open Badges para terceros.
+export interface PublicBadgeAssertion {
+  assertionId: string;
+  status: BadgeAssertionStatus;
+  issuedAt: string;
+  expiresAt: string | null;
+  recipientName: string;
+  badgeClassId: string;
+  badgeName: string;
+  badgeDescription: string;
+  badgeCriteria: string;
+  badgeImageUrl: string | null;
+  issuerName: string;
+  issuerUrl: string | null;
+  issuerImageUrl: string | null;
+}
+
 export interface AppointmentParticipantDetail {
   id: string;
   fullName: string;

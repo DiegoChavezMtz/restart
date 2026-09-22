@@ -10,6 +10,7 @@ import { EmptyState, LoadingState } from "@/presentation/molecules/AsyncState";
 import { FormStatusMessage } from "@/presentation/molecules/FormStatusMessage";
 import type { FormResponseStatus } from "@/domain/entities";
 import { getProfileCompletionStatus } from "@/presentation/services/profileCompletionService";
+import * as participantAttendance from "@/presentation/services/participantAttendanceService";
 import * as responseService from "@/presentation/services/responseService";
 import type { VisibleForm } from "@/presentation/services/responseService";
 
@@ -88,6 +89,7 @@ export default function RespondListPage() {
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [employmentProfileComplete, setEmploymentProfileComplete] = useState(false);
+  const [attendanceSummary, setAttendanceSummary] = useState<participantAttendance.ParticipantAttendanceSummary | null>(null);
 
   useEffect(() => {
     responseService
@@ -100,6 +102,12 @@ export default function RespondListPage() {
         setError("No pudimos cargar tus formularios. Intenta recargar la página.");
         setLoadState("error");
       });
+  }, []);
+
+  useEffect(() => {
+    participantAttendance.getMyAttendance()
+      .then((attendance) => setAttendanceSummary(attendance.summary))
+      .catch(() => setAttendanceSummary(null));
   }, []);
 
   useEffect(() => {
@@ -138,6 +146,15 @@ export default function RespondListPage() {
         </EmploymentBannerText>
         <Button as={Link} href="/respond/evaluations" variant="secondary">Ver evaluaciones</Button>
       </EmploymentBanner>
+      {attendanceSummary && (
+        <Card>
+          <Heading>
+            <Title as="h2">Mi asistencia</Title>
+            <Subtitle>Desde julio: {attendanceSummary.absent} falta{attendanceSummary.absent === 1 ? "" : "s"}, {attendanceSummary.late} retardo{attendanceSummary.late === 1 ? "" : "s"} y {attendanceSummary.justified} justificada{attendanceSummary.justified === 1 ? "" : "s"}.</Subtitle>
+          </Heading>
+          <Button as={Link} href="/respond/attendance" variant="secondary">Ver mi asistencia</Button>
+        </Card>
+      )}
       <Card>
         {loadState === "loading" && <LoadingState label="Cargando tus formularios…" />}
         {loadState === "error" && <EmptyState title="No pudimos cargar tus formularios" description="Actualiza la página para volver a intentarlo." />}

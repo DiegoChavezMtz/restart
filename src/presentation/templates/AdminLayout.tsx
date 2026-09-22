@@ -240,6 +240,7 @@ const NAV_ITEMS = [
   { href: "/admin/users", label: "Cuentas", title: "Cuentas" },
   { href: "/admin/cases", label: "Casos", title: "Casos" },
   { href: "/admin/employment-ai", label: "Control de IA", title: "Control de IA" },
+  { href: "/admin/badges", label: "Insignias", title: "Insignias" },
 ] as const;
 
 function isActive(pathname: string, href: string) {

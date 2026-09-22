@@ -5,6 +5,10 @@ import type {
   AttendanceRecord,
   AttendanceSession,
   AttendanceStatus,
+  BadgeAssertion,
+  BadgeClass,
+  BadgeIssuer,
+  PublicBadgeAssertion,
   Cohort,
   Form,
   FormAssignment,
@@ -369,6 +373,49 @@ export interface StatsRepository {
     adminAccessToken: string
   ): Promise<FormResponse[]>;
   getUserById(userId: string, adminAccessToken: string): Promise<User | null>;
+}
+
+export interface CreateBadgeClassInput {
+  issuerId: string;
+  name: string;
+  description: string;
+  criteria: string;
+  imageFile: File | null;
+  validMonths: number | null;
+}
+
+export type UpdateBadgeClassInput = Partial<Omit<CreateBadgeClassInput, "issuerId">>;
+
+export interface BadgeCandidate {
+  user: User;
+  assertion: BadgeAssertion | null;
+}
+
+export interface BadgeRepository {
+  listIssuers(adminAccessToken: string): Promise<BadgeIssuer[]>;
+  listBadgeClasses(accessToken: string): Promise<BadgeClass[]>;
+  getBadgeClassById(id: string, accessToken: string): Promise<BadgeClass | null>;
+  createBadgeClass(input: CreateBadgeClassInput, adminAccessToken: string): Promise<BadgeClass>;
+  updateBadgeClass(id: string, input: UpdateBadgeClassInput, adminAccessToken: string): Promise<BadgeClass>;
+
+  listCandidatesByCohort(
+    cohortId: string,
+    badgeClassId: string,
+    adminAccessToken: string
+  ): Promise<BadgeCandidate[]>;
+  issueBadgeAssertion(
+    input: { badgeClassId: string; recipientId: string; issuedBy: string },
+    adminAccessToken: string
+  ): Promise<BadgeAssertion>;
+  revokeBadgeAssertion(
+    id: string,
+    revokedBy: string,
+    adminAccessToken: string
+  ): Promise<BadgeAssertion>;
+
+  listMyBadgeAssertions(accessToken: string): Promise<Array<BadgeAssertion & { badgeClass: BadgeClass }>>;
+
+  getPublicBadgeAssertion(id: string): Promise<PublicBadgeAssertion | null>;
 }
 
 export interface JustifyAttendanceInput {

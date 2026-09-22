@@ -13,3 +13,5 @@ export async function callGemini(prompt: string): Promise<string> {
   const result = await model.generateContent(prompt);
   return result.response.text().trim();
 }
+
+
